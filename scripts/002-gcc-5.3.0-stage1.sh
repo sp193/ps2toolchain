@@ -14,7 +14,9 @@
  ## Enter the source directory and patch the source code.
  cd gcc-$GCC_VERSION || { exit 1; }
  ## Apply the bug-fix to libgcc first.
- cat ../../patches/gcc-5.3.0-libgcc.patch | patch -p1 || { exit 1; }
+ if [ -e ../../patches/gcc-$GCC_VERSION-libgcc.patch ]; then
+ 	cat ../../patches/gcc-$GCC_VERSION-libgcc.patch | patch -p1 || { exit 1; }
+ fi
  if [ -e ../../patches/gcc-$GCC_VERSION-PS2.patch ]; then
  	cat ../../patches/gcc-$GCC_VERSION-PS2.patch | patch -p1 || { exit 1; }
  fi
