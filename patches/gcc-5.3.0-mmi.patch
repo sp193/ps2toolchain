@@ -1,0 +1,450 @@
+diff -rupNb gcc-5.3.0-base/gcc/config/mips/5900.md gcc-5.3.0-mmi/gcc/config/mips/5900.md
+--- gcc-5.3.0-base/gcc/config/mips/5900.md	Sun Apr  3 09:55:04 2016
++++ gcc-5.3.0-mmi/gcc/config/mips/5900.md	Sun Apr  3 16:36:28 2016
+@@ -22,6 +22,30 @@
+   (eq_attr "type" "mfhi1,mflo1,mthi1,mtlo1")
+   "imuldiv*3")
+ 
++;; 128-bit vectors of words, halfwords and bytes.
++(define_mode_iterator MMI_VWHB [V4SI V8HI V16QI])
++
++;; Suffixes corresponding to the modes from the MMI_VWHB iterator.
++(define_mode_attr mmi_suffix [(V4SI "w") (V8HI "h") (V16QI "b")])
++
++;; Expander to legitimize moves involving values of vector modes.
++(define_expand "mov<mode>"
++  [(set (match_operand:MMI_VWHB 0)
++	(match_operand:MMI_VWHB 1))]
++  "TARGET_MIPS5900"
++{
++  if (mips_legitimize_move (<MODE>mode, operands[0], operands[1]))
++    DONE;
++})
++
++;; Handle legitimized moves between values of vector modes.
++(define_insn "mov<mode>_internal"
++  [(set (match_operand:MMI_VWHB 0 "nonimmediate_operand" "=d, m,  d")
++	(match_operand:MMI_VWHB 1 "move_operand"         "dYG,dYG,m"))]
++  "TARGET_MIPS5900"
++  { return mips_output_move (operands[0], operands[1]); }
++  [(set_attr "move_type" "move,store,load")])
++
+ ;; RSQRT
+ (define_insn "rsqrtsf"
+   [(set (match_operand:SF 0 "register_operand" "=f")
+@@ -39,8 +63,7 @@
+ 		 (match_operand:SF 2 "register_operand" "f")))]
+   "TARGET_MIPS5900"
+   "min.s\t%0,%1,%2"
+-  [(set_attr "type" "fadd")
+-   (set_attr "mode" "SF")])
++  [(set_attr "type" "fadd")])
+ 
+ (define_insn "smaxsf3"
+   [(set (match_operand:SF 0 "register_operand" "=f")
+@@ -50,3 +73,87 @@
+   "max.s\t%0,%1,%2"
+   [(set_attr "type" "fadd")
+    (set_attr "mode" "SF")])
++
++;; Logical MMI
++(define_insn "ior<mode>3"
++  [(set (match_operand:MMI_VWHB 0 "register_operand" "=d")
++	(ior:MMI_VWHB (match_operand:MMI_VWHB 1 "register_operand" "d")
++		    (match_operand:MMI_VWHB 2 "register_operand" "d")))]
++  "TARGET_MIPS5900"
++  "por\t%0,%1,%2"
++  [(set_attr "type" "mmi")])
++
++(define_insn "xor<mode>3"
++  [(set (match_operand:MMI_VWHB 0 "register_operand" "=d")
++	(xor:MMI_VWHB (match_operand:MMI_VWHB 1 "register_operand" "d")
++		    (match_operand:MMI_VWHB 2 "register_operand" "d")))]
++  "TARGET_MIPS5900"
++  "pxor\t%0,%1,%2"
++  [(set_attr "type" "mmi")])
++
++(define_insn "nor<mode>3"
++  [(set (match_operand:MMI_VWHB 0 "register_operand" "=d")
++	(and:MMI_VWHB (not:MMI_VWHB (match_operand:MMI_VWHB 1 "register_operand" "d"))
++		 (not:MMI_VWHB (match_operand:MMI_VWHB 2 "register_operand" "d"))))]
++  "TARGET_MIPS5900"
++  "pnor\t%0,%1,%2"
++  [(set_attr "type" "mmi")])
++
++(define_insn "and<mode>3"
++  [(set (match_operand:MMI_VWHB 0 "register_operand" "=d")
++	(and:MMI_VWHB (match_operand:MMI_VWHB 1 "register_operand" "d")
++		    (match_operand:MMI_VWHB 2 "register_operand" "d")))]
++  "TARGET_MIPS5900"
++  "pand\t%0,%1,%2"
++  [(set_attr "type" "mmi")])
++
++;; Arithmetic MMI
++(define_insn "add<mode>3"
++  [(set (match_operand:MMI_VWHB 0 "register_operand" "=d")
++        (plus:MMI_VWHB (match_operand:MMI_VWHB 1 "register_operand" "d")
++		       (match_operand:MMI_VWHB 2 "register_operand" "d")))]
++  "TARGET_MIPS5900"
++  "padd<mmi_suffix>\t%0,%1,%2"
++  [(set_attr "type"	"mmi")])
++
++(define_insn "sub<mode>3"
++  [(set (match_operand:MMI_VWHB 0 "register_operand" "=d")
++        (minus:MMI_VWHB (match_operand:MMI_VWHB 1 "register_operand" "d")
++		        (match_operand:MMI_VWHB 2 "register_operand" "d")))]
++  "TARGET_MIPS5900"
++  "psub<mmi_suffix>\t%0,%1,%2"
++  [(set_attr "type"	"mmi")])
++
++;; Arithmetic MMI - signed saturation
++(define_insn "ssadd<mode>3"
++  [(set (match_operand:MMI_VWHB 0 "register_operand" "=d")
++        (ss_plus:MMI_VWHB (match_operand:MMI_VWHB 1 "register_operand" "d")
++		          (match_operand:MMI_VWHB 2 "register_operand" "d")))]
++  "TARGET_MIPS5900"
++  "padds<mmi_suffix>\t%0,%1,%2"
++  [(set_attr "type"	"mmi")])
++
++(define_insn "sssub<mode>3"
++  [(set (match_operand:MMI_VWHB 0 "register_operand" "=d")
++        (ss_minus:MMI_VWHB (match_operand:MMI_VWHB 1 "register_operand" "d")
++		           (match_operand:MMI_VWHB 2 "register_operand" "d")))]
++  "TARGET_MIPS5900"
++  "psubs<mmi_suffix>\t%0,%1,%2"
++  [(set_attr "type"	"mmi")])
++
++;; Arithmetic MMI - unsigned saturation
++(define_insn "usadd<mode>3"
++  [(set (match_operand:MMI_VWHB 0 "register_operand" "=d")
++        (us_plus:MMI_VWHB (match_operand:MMI_VWHB 1 "register_operand" "d")
++		          (match_operand:MMI_VWHB 2 "register_operand" "d")))]
++  "TARGET_MIPS5900"
++  "paddu<mmi_suffix>\t%0,%1,%2"
++  [(set_attr "type"	"mmi")])
++
++(define_insn "ussub<mode>3"
++  [(set (match_operand:MMI_VWHB 0 "register_operand" "=d")
++        (us_minus:MMI_VWHB (match_operand:MMI_VWHB 1 "register_operand" "d")
++		           (match_operand:MMI_VWHB 2 "register_operand" "d")))]
++  "TARGET_MIPS5900"
++  "psubu<mmi_suffix>\t%0,%1,%2"
++  [(set_attr "type"	"mmi")])
+diff -rupNb gcc-5.3.0-base/gcc/config/mips/mips-ftypes.def gcc-5.3.0-mmi/gcc/config/mips/mips-ftypes.def
+--- gcc-5.3.0-base/gcc/config/mips/mips-ftypes.def	Sun Mar 27 16:01:13 2016
++++ gcc-5.3.0-mmi/gcc/config/mips/mips-ftypes.def	Fri Feb 26 14:58:32 2016
+@@ -127,3 +127,10 @@ DEF_MIPS_FTYPE (2, (VOID, SI, SI))
+ DEF_MIPS_FTYPE (1, (VOID, USI))
+ DEF_MIPS_FTYPE (2, (VOID, V2HI, V2HI))
+ DEF_MIPS_FTYPE (2, (VOID, V4QI, V4QI))
++
++DEF_MIPS_FTYPE (2, (UV16QI, UV16QI, UV16QI))
++DEF_MIPS_FTYPE (2, (UV8HI, UV8HI, UV8HI))
++DEF_MIPS_FTYPE (2, (UV4SI, UV4SI, UV4SI))
++DEF_MIPS_FTYPE (2, (V16QI, V16QI, V16QI))
++DEF_MIPS_FTYPE (2, (V8HI, V8HI, V8HI))
++DEF_MIPS_FTYPE (2, (V4SI, V4SI, V4SI))
+diff -rupNb gcc-5.3.0-base/gcc/config/mips/mips.c gcc-5.3.0-mmi/gcc/config/mips/mips.c
+--- gcc-5.3.0-base/gcc/config/mips/mips.c	Sun Mar 27 16:07:17 2016
++++ gcc-5.3.0-mmi/gcc/config/mips/mips.c	Sun Apr  3 16:58:01 2016
+@@ -4537,6 +4537,24 @@ mips_split_move_p (rtx dest, rtx src, en
+ 	return false;
+     }
+ 
++  /* The R5900 has special quad-word loads and stores, and 128-bit GPRs.  */
++  if (TARGET_MIPS5900)
++    {
++      if ((   (GET_MODE (dest) == V4SImode)
++	      || (GET_MODE (dest) == V8HImode)
++	      || (GET_MODE (dest) == V16QImode))
++		  && (  (REG_P (src) && GP_REG_P (REGNO (src)) && MEM_P (dest))
++		     || (REG_P (dest) && GP_REG_P (REGNO (dest)) && MEM_P (src))))
++	return false;
++
++      if ((REG_P (src) && REG_P (dest) &&
++		   GP_REG_P (REGNO (src)) && GP_REG_P (REGNO (dest)))
++	      && ((GET_MODE (dest) == V4SImode)
++	       || (GET_MODE (dest) == V8HImode)
++	       || (GET_MODE (dest) == V16QImode)))
++	return false;
++    }
++
+   /* Otherwise split all multiword moves.  */
+   return size > UNITS_PER_WORD;
+ }
+@@ -4665,7 +4683,19 @@ mips_output_move (rtx dest, rtx src)
+       if (dest_code == REG)
+ 	{
+ 	  if (GP_REG_P (REGNO (dest)))
++	    {
++	      if (TARGET_MIPS5900
++	        && (mode == V4SImode
++		    || mode == V8HImode
++		    || mode == V16QImode))
++	        {
++		  return "por\t%0,%.,%1";
++	        }
++	      else
++	        {
+ 	    return "move\t%0,%z1";
++	        }
++	    }
+ 
+ 	  if (mips_mult_move_p (dest, src, SPLIT_IF_NECESSARY))
+ 	    {
+@@ -4709,6 +4739,7 @@ mips_output_move (rtx dest, rtx src)
+ 	  case 2: return "sh\t%z1,%0";
+ 	  case 4: return "sw\t%z1,%0";
+ 	  case 8: return "sd\t%z1,%0";
++	  case 16: return "sq\t%z1,%0";
+ 	  }
+     }
+   if (dest_code == REG && GP_REG_P (REGNO (dest)))
+@@ -4758,6 +4789,7 @@ mips_output_move (rtx dest, rtx src)
+ 	  case 2: return "lhu\t%0,%1";
+ 	  case 4: return "lw\t%0,%1";
+ 	  case 8: return "ld\t%0,%1";
++	  case 16: return "lq\t%0,%1";
+ 	  }
+ 
+       if (src_code == CONST_INT)
+@@ -5321,6 +5353,9 @@ mips_get_arg_info (struct mips_arg_info 
+ 
+   /* Work out the size of the argument.  */
+   num_bytes = type ? int_size_in_bytes (type) : GET_MODE_SIZE (mode);
++  if (TARGET_MIPS5900)
++    num_words = (num_bytes + MAX_UNITS_PER_WORD_R5900 - 1) / MAX_UNITS_PER_WORD_R5900;
++  else
+   num_words = (num_bytes + UNITS_PER_WORD - 1) / UNITS_PER_WORD;
+ 
+   /* Decide whether it should go in a floating-point register, assuming
+@@ -5725,6 +5760,13 @@ mips_pass_by_reference (cumulative_args_
+ 	  || mode == DAmode || mode == UDAmode)
+ 	return 0;
+ 
++      /* The R5900's registers are large enough to pass arguments in these modes.  */
++      if (TARGET_MIPS5900
++	  && (mode == V4SImode
++	      || mode == V8HImode
++	      || mode == V16QImode))
++	return 0;
++
+       size = type ? int_size_in_bytes (type) : GET_MODE_SIZE (mode);
+       return size == -1 || size > UNITS_PER_WORD;
+     }
+@@ -7523,6 +7565,18 @@ mips_block_move_straight (rtx dest, rtx 
+   machine_mode mode;
+   rtx *regs;
+ 
++  /* The R5900 has quad-word loads and stores, but they will only work 
++     if the data is aligned to at least 128-bit boundaries.  */
++  if (TARGET_MIPS5900
++      && ((MEM_ALIGN (src) >= MAX_BITS_PER_WORD_R5900)
++      && (MEM_ALIGN (dest) >= MAX_BITS_PER_WORD_R5900)))
++    {
++       bits = MAX_BITS_PER_WORD_R5900;
++       mode = mode_for_size (bits, MODE_VECTOR_INT, 0);
++       delta = bits / BITS_PER_UNIT;
++    }
++  else
++    {
+   /* Work out how many bits to move at a time.  If both operands have
+      half-word alignment, it is usually better to move in half words.
+      For instance, lh/lh/sh/sh is usually better than lwl/lwr/swl/swr
+@@ -7536,6 +7590,7 @@ mips_block_move_straight (rtx dest, rtx 
+ 
+   mode = mode_for_size (bits, MODE_INT, 0);
+   delta = bits / BITS_PER_UNIT;
++    }
+ 
+   /* Allocate a buffer for the temporary registers.  */
+   regs = XALLOCAVEC (rtx, length / delta);
+@@ -12142,6 +12197,14 @@ mips_hard_regno_mode_ok_p (unsigned int 
+   size = GET_MODE_SIZE (mode);
+   mclass = GET_MODE_CLASS (mode);
+ 
++  /* Allow 128-bit vector modes for the R5900.  */
++  if (TARGET_MIPS5900
++    && GP_REG_P (regno)
++    && (mode == V4SImode
++	|| mode == V8HImode
++	|| mode == V16QImode))
++    return true;
++
+   if (GP_REG_P (regno) && mode != CCFmode)
+     return ((regno - GP_REG_FIRST) & 1) == 0 || size <= UNITS_PER_WORD;
+ 
+@@ -12241,6 +12304,14 @@ mips_hard_regno_nregs (int regno, machin
+   if (FP_REG_P (regno))
+     return (GET_MODE_SIZE (mode) + UNITS_PER_FPREG - 1) / UNITS_PER_FPREG;
+ 
++  /* The R5900 supports 128-bit vector modes in its GPRs.  */
++  if (TARGET_MIPS5900
++      && GP_REG_P (regno)
++      && (mode == V4SImode
++	  || mode == V8HImode
++	  || mode == V16QImode))
++    return 1;
++
+   /* All other registers are word-sized.  */
+   return (GET_MODE_SIZE (mode) + UNITS_PER_WORD - 1) / UNITS_PER_WORD;
+ }
+@@ -12654,6 +12725,11 @@ mips_vector_mode_supported_p (machine_mo
+     case V8QImode:
+       return TARGET_LOONGSON_VECTORS;
+ 
++    case V4SImode:
++    case V8HImode:
++    case V16QImode:
++      return TARGET_MIPS5900;
++
+     default:
+       return false;
+     }
+@@ -14224,6 +14300,7 @@ AVAIL_NON_MIPS16 (dsp_32, !TARGET_64BIT 
+ AVAIL_NON_MIPS16 (dsp_64, TARGET_64BIT && TARGET_DSP)
+ AVAIL_NON_MIPS16 (dspr2_32, !TARGET_64BIT && TARGET_DSPR2)
+ AVAIL_NON_MIPS16 (loongson, TARGET_LOONGSON_VECTORS)
++AVAIL_NON_MIPS16 (mmi, TARGET_MIPS5900)
+ AVAIL_NON_MIPS16 (cache, TARGET_CACHE_BUILTIN)
+ 
+ /* Construct a mips_builtin_description from the given arguments.
+@@ -14341,6 +14418,14 @@ AVAIL_NON_MIPS16 (cache, TARGET_CACHE_BU
+ #define LOONGSON_BUILTIN_SUFFIX(INSN, SUFFIX, FUNCTION_TYPE)		\
+   LOONGSON_BUILTIN_ALIAS (INSN, INSN ## _ ## SUFFIX, FUNCTION_TYPE)
+ 
++/* Define a MMI MIPS_BUILTIN_DIRECT function __builtin_mmi_<INSN>
++   for instruction CODE_FOR_mmi_<INSN>.  FUNCTION_TYPE is a
++   builtin_description field.  */
++#define MMI_DIRECT_BUILTIN(INSN, FUNCTION_TYPE)				\
++  { CODE_FOR_mmi_ ## INSN, MIPS_FP_COND_f,				\
++    "__builtin_mmi_" #INSN, MIPS_BUILTIN_DIRECT, FUNCTION_TYPE,		\
++    mips_builtin_avail_mmi }
++
+ #define CODE_FOR_mips_sqrt_ps CODE_FOR_sqrtv2sf2
+ #define CODE_FOR_mips_addq_ph CODE_FOR_addv2hi3
+ #define CODE_FOR_mips_addu_qb CODE_FOR_addv4qi3
+@@ -14381,6 +14466,25 @@ AVAIL_NON_MIPS16 (cache, TARGET_CACHE_BU
+ #define CODE_FOR_loongson_psubush CODE_FOR_ussubv4hi3
+ #define CODE_FOR_loongson_psubusb CODE_FOR_ussubv8qi3
+ 
++#define CODE_FOR_mmi_paddb CODE_FOR_addv16qi3
++#define CODE_FOR_mmi_psubb CODE_FOR_subv16qi3
++#define CODE_FOR_mmi_paddh CODE_FOR_addv8hi3
++#define CODE_FOR_mmi_psubh CODE_FOR_subv8hi3
++#define CODE_FOR_mmi_paddw CODE_FOR_addv4si3
++#define CODE_FOR_mmi_psubw CODE_FOR_subv4si3
++#define CODE_FOR_mmi_paddsb CODE_FOR_ssaddv16qi3
++#define CODE_FOR_mmi_psubsb CODE_FOR_sssubv16qi3
++#define CODE_FOR_mmi_paddsh CODE_FOR_ssaddv8hi3
++#define CODE_FOR_mmi_psubsh CODE_FOR_sssubv8hi3
++#define CODE_FOR_mmi_paddsw CODE_FOR_ssaddv4si3
++#define CODE_FOR_mmi_psubsw CODE_FOR_sssubv4si3
++#define CODE_FOR_mmi_paddub CODE_FOR_usaddv16qi3
++#define CODE_FOR_mmi_psubub CODE_FOR_ussubv16qi3
++#define CODE_FOR_mmi_padduh CODE_FOR_usaddv8hi3
++#define CODE_FOR_mmi_psubuh CODE_FOR_ussubv8hi3
++#define CODE_FOR_mmi_padduw CODE_FOR_usaddv4si3
++#define CODE_FOR_mmi_psubuw CODE_FOR_ussubv4si3
++
+ static const struct mips_builtin_description mips_builtins[] = {
+ #define MIPS_GET_FCSR 0
+   DIRECT_BUILTIN (get_fcsr, MIPS_USI_FTYPE_VOID, hard_float),
+@@ -14668,6 +14772,26 @@ static const struct mips_builtin_descrip
+   LOONGSON_BUILTIN_SUFFIX (punpcklhw, s, MIPS_V4HI_FTYPE_V4HI_V4HI),
+   LOONGSON_BUILTIN_SUFFIX (punpcklwd, s, MIPS_V2SI_FTYPE_V2SI_V2SI),
+ 
++  /* The following are for the MIPS R5900 MMI.  */
++  MMI_DIRECT_BUILTIN (paddb, MIPS_UV16QI_FTYPE_UV16QI_UV16QI),
++  MMI_DIRECT_BUILTIN (psubb, MIPS_UV16QI_FTYPE_UV16QI_UV16QI),
++  MMI_DIRECT_BUILTIN (paddh, MIPS_UV8HI_FTYPE_UV8HI_UV8HI),
++  MMI_DIRECT_BUILTIN (psubh, MIPS_UV8HI_FTYPE_UV8HI_UV8HI),
++  MMI_DIRECT_BUILTIN (paddw, MIPS_UV4SI_FTYPE_UV4SI_UV4SI),
++  MMI_DIRECT_BUILTIN (psubw, MIPS_UV4SI_FTYPE_UV4SI_UV4SI),
++  MMI_DIRECT_BUILTIN (paddsb, MIPS_V16QI_FTYPE_V16QI_V16QI),
++  MMI_DIRECT_BUILTIN (psubsb, MIPS_V16QI_FTYPE_V16QI_V16QI),
++  MMI_DIRECT_BUILTIN (paddsh, MIPS_V8HI_FTYPE_V8HI_V8HI),
++  MMI_DIRECT_BUILTIN (psubsh, MIPS_V8HI_FTYPE_V8HI_V8HI),
++  MMI_DIRECT_BUILTIN (paddsw, MIPS_V4SI_FTYPE_V4SI_V4SI),
++  MMI_DIRECT_BUILTIN (psubsw, MIPS_V4SI_FTYPE_V4SI_V4SI),
++  MMI_DIRECT_BUILTIN (paddub, MIPS_UV16QI_FTYPE_UV16QI_UV16QI),
++  MMI_DIRECT_BUILTIN (psubub, MIPS_UV16QI_FTYPE_UV16QI_UV16QI),
++  MMI_DIRECT_BUILTIN (padduh, MIPS_UV8HI_FTYPE_UV8HI_UV8HI),
++  MMI_DIRECT_BUILTIN (psubuh, MIPS_UV8HI_FTYPE_UV8HI_UV8HI),
++  MMI_DIRECT_BUILTIN (padduw, MIPS_UV4SI_FTYPE_UV4SI_UV4SI),
++  MMI_DIRECT_BUILTIN (psubuw, MIPS_UV4SI_FTYPE_UV4SI_UV4SI),
++
+   /* Sundry other built-in functions.  */
+   DIRECT_NO_TARGET_BUILTIN (cache, MIPS_VOID_FTYPE_SI_CVPOINTER, cache)
+ };
+@@ -14730,13 +14854,22 @@ mips_build_cvpointer_type (void)
+ #define MIPS_ATYPE_V2SI mips_builtin_vector_type (intSI_type_node, V2SImode)
+ #define MIPS_ATYPE_V4QI mips_builtin_vector_type (intQI_type_node, V4QImode)
+ #define MIPS_ATYPE_V4HI mips_builtin_vector_type (intHI_type_node, V4HImode)
++#define MIPS_ATYPE_V4SI mips_builtin_vector_type (intSI_type_node, V4SImode)
++#define MIPS_ATYPE_V8HI mips_builtin_vector_type (intHI_type_node, V8HImode)
+ #define MIPS_ATYPE_V8QI mips_builtin_vector_type (intQI_type_node, V8QImode)
++#define MIPS_ATYPE_V16QI mips_builtin_vector_type (intQI_type_node, V16QImode)
+ #define MIPS_ATYPE_UV2SI					\
+   mips_builtin_vector_type (unsigned_intSI_type_node, V2SImode)
+ #define MIPS_ATYPE_UV4HI					\
+   mips_builtin_vector_type (unsigned_intHI_type_node, V4HImode)
++#define MIPS_ATYPE_UV4SI					\
++  mips_builtin_vector_type (unsigned_intSI_type_node, V4SImode)
++#define MIPS_ATYPE_UV8HI					\
++  mips_builtin_vector_type (unsigned_intHI_type_node, V8HImode)
+ #define MIPS_ATYPE_UV8QI					\
+   mips_builtin_vector_type (unsigned_intQI_type_node, V8QImode)
++#define MIPS_ATYPE_UV16QI					\
++  mips_builtin_vector_type (unsigned_intQI_type_node, V16QImode)
+ 
+ /* MIPS_FTYPE_ATYPESN takes N MIPS_FTYPES-like type codes and lists
+    their associated MIPS_ATYPEs.  */
+diff -rupNb gcc-5.3.0-base/gcc/config/mips/mips.h gcc-5.3.0-mmi/gcc/config/mips/mips.h
+--- gcc-5.3.0-base/gcc/config/mips/mips.h	Sun Apr  3 10:04:54 2016
++++ gcc-5.3.0-mmi/gcc/config/mips/mips.h	Sun Apr  3 10:00:06 2016
+@@ -1455,6 +1455,7 @@ FP_ASM_SPEC "\
+ #endif
+ 
+ /* The R5900 has 128-bit registers.  */
++#define MAX_UNITS_PER_WORD_R5900 16
+ #define MAX_BITS_PER_WORD_R5900 128
+ 
+ /* For MIPS, width of a floating point register.  */
+@@ -1891,10 +1892,14 @@ FP_ASM_SPEC "\
+   mips_hard_regno_caller_save_mode (REGNO, NREGS, MODE)
+ 
+ /* Odd-numbered single-precision registers are not considered callee-saved
+-   for o32 FPXX as they will be clobbered when run on an FR=1 FPU.  */
++   for o32 FPXX as they will be clobbered when run on an FR=1 FPU.
++
++   The R5900 has 128-bit registers. The upper 64-bits of each GPR
++   is used for MMI, but is not callee-saved.  */
+ #define HARD_REGNO_CALL_PART_CLOBBERED(REGNO, MODE)			\
+-  (TARGET_FLOATXX && hard_regno_nregs[REGNO][MODE] == 1			\
+-   && FP_REG_P (REGNO) && ((REGNO) & 1))
++  ((TARGET_FLOATXX && hard_regno_nregs[REGNO][MODE] == 1			\
++    && FP_REG_P (REGNO) && ((REGNO) & 1))					\
++   || (TARGET_MIPS5900 && GET_MODE_SIZE (MODE) >= UNITS_PER_WORD))
+ 
+ #define MODES_TIEABLE_P mips_modes_tieable_p
+ 
+diff -rupNb gcc-5.3.0-base/gcc/config/mips/mips.md gcc-5.3.0-mmi/gcc/config/mips/mips.md
+--- gcc-5.3.0-base/gcc/config/mips/mips.md	Sun Apr  3 09:50:55 2016
++++ gcc-5.3.0-mmi/gcc/config/mips/mips.md	Sun Apr  3 10:00:20 2016
+@@ -363,13 +363,14 @@
+ ;; nop		no operation
+ ;; ghost	an instruction that produces no real code
+ ;; multimem	microMIPS multiword load and store
++;; mmi		R5900 Multimedia Instruction
+ (define_attr "type"
+   "unknown,branch,jump,call,load,fpload,fpidxload,store,fpstore,fpidxstore,
+    prefetch,prefetchx,condmove,mtc,mfc,mthi,mtlo,mfhi,mflo,const,arith,logical,
+    shift,slt,signext,clz,pop,trap,imul,imul3,imul3nc,imadd,idiv,idiv3,move,
+    fmove,fadd,fmul,fmadd,fdiv,frdiv,frdiv1,frdiv2,fabs,fneg,fcmp,fcvt,fsqrt,
+    frsqrt,frsqrt1,frsqrt2,dspmac,dspmacsat,accext,accmod,dspalu,dspalusat,
+-   multi,atomic,syncloop,nop,ghost,multimem,mthi1,mtlo1,mfhi1,mflo1"
++   multi,atomic,syncloop,nop,ghost,multimem,mthi1,mtlo1,mfhi1,mflo1,mmi"
+   (cond [(eq_attr "jal" "!unset") (const_string "call")
+ 	 (eq_attr "got" "load") (const_string "load")
+ 
