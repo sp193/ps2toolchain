@@ -13,7 +13,7 @@
 
  1) Set up your environment by installing the following software:
 
-  gcc, make, patch, subversion, wget, libmpfr, libmpc, libgmp, libgomp, texinfo
+  gcc, g++, make, patch, subversion, wget, libmpfr, libmpc, libgmp, libgomp, texinfo
 
  2) Add the following to your login script:
 

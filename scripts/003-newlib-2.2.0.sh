@@ -17,11 +17,17 @@
  	cat ../../patches/newlib-$NEWLIB_VERSION-PS2.patch | patch -p1 || { exit 1; }
  fi
 
+ TARG_NAME=ee
+ TARGET=mips64r5900el-ps2-elf
+
  ## Create and enter the build directory.
- mkdir build-ee && cd build-ee || { exit 1; }
+ mkdir build-$TARG_NAME && cd build-$TARG_NAME || { exit 1; }
 
  ## Configure the build.
- ../configure --prefix="$PS2DEV/ee" --target="mips64r5900el-ps2-elf" || { exit 1; }
+ ../configure --prefix="$PS2DEV/$TARG_NAME" --target="$TARGET" || { exit 1; }
 
  ## Compile and install.
- make clean && make -j 2 && make install && make clean || { exit 1; }
+ 
+ # Temporary fix for some multi-core processors. Hope that it will be fixed soon.
+ # make clean && make -j 2 && make install && make clean || { exit 1; }
+ make clean && make && make install && make clean || { exit 1; }
