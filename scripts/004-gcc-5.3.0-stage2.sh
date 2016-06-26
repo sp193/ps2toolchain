@@ -1,6 +1,6 @@
-#!/bin/sh
+#!/bin/bash
 # gcc-5.3.0-stage2.sh by SP193
-# Originally gcc-3.2.2-stage2.sh by Dan Peori (danpeori@oopo.net)
+# Based on gcc-3.2.2-stage2.sh by Dan Peori (danpeori@oopo.net)
 
  GCC_VERSION=5.3.0
  ## Download the source code.
@@ -34,5 +34,14 @@
  ## Configure the build.
  ../configure --prefix="$PS2DEV/$TARG_NAME" --target="$TARGET" --enable-languages="c,c++" --disable-nls --disable-shared --disable-libssp --disable-libmudflap --disable-threads --disable-libgomp --disable-libquadmath --disable-target-libiberty --disable-target-zlib --without-ppl --without-cloog --with-headers=no --disable-libada --disable-libatomic --disable-multilib --with-headers="$PS2DEV/$TARG_NAME/$TARGET/include" $TARG_XTRA_OPTS || { exit 1; }
 
+ ## Determine the maximum number of processes that Make can work with.
+ ## MinGW's Make doesn't work properly with multi-core processors.
+ OSVER=$(uname)
+ if [ ${OSVER:0:10} == MINGW32_NT ]; then
+ 	PROC_NR=2
+ else
+ 	PROC_NR=$(nproc)
+ fi
+
  ## Compile and install.
- make clean && make -j 2 && make install && make clean || { exit 1; }
+ make clean && make -j $PROC_NR && make install && make clean || { exit 1; }

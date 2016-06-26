@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # ps2sdk.sh by Dan Peori (danpeori@oopo.net)
 # changed to use Git by Mathias Lafeldt <misfire@debugon.org>
 
@@ -14,9 +14,18 @@ unset PS2SDKSRC
   git reset --hard origin/master || exit 1
  fi
 
- ## Build and install
- make clean && make -j 2 && make release && make clean || { exit 1; }
+ ## Determine the maximum number of processes that Make can work with.
+ ## MinGW's Make doesn't work properly with multi-core processors.
+ OSVER=$(uname)
+ if [ ${OSVER:0:10} == MINGW32_NT ]; then
+ 	PROC_NR=2
+ else
+ 	PROC_NR=$(nproc)
+ fi
 
- ## Replace newlib's crt0 with the one in ps2sdk.
-# ln -sf "$PS2SDK/ee/startup/crt0.o" "$PS2DEV/ee/lib/gcc-lib/ee/3.2.3/crt0.o" || { exit 1; }
-# ln -sf "$PS2SDK/ee/startup/crt0.o" "$PS2DEV/ee/ee/lib/crt0.o" || { exit 1; }
+ ## Build and install
+ make clean && make -j $PROC_NR && make release && make clean || { exit 1; }
+
+ ## Replace Newlib's crt0 with the one in ps2sdk.
+# ln -sf "$PS2SDK/ee/startup/crt0.o" "$PS2DEV/ee/lib/gcc/mips64r5900el-ps2-elf/5.3.0/crt0.o" || { exit 1; }
+# ln -sf "$PS2SDK/ee/startup/crt0.o" "$PS2DEV/ee/mips64r5900el-ps2-elf/lib/crt0.o" || { exit 1; }

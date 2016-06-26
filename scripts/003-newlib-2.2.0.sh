@@ -1,6 +1,6 @@
-#!/bin/sh
+#!/bin/bash
 # newlib-2.2.0.sh by SP193
-# Originally newlib-1.10.0.sh by Dan Peori (danpeori@oopo.net)
+# Based on newlib-1.10.0.sh by Dan Peori (danpeori@oopo.net)
 
  NEWLIB_VERSION=2.2.0
  ## Download the source code.
@@ -26,8 +26,14 @@
  ## Configure the build.
  ../configure --prefix="$PS2DEV/$TARG_NAME" --target="$TARGET" || { exit 1; }
 
- ## Compile and install.
- 
- # Temporary fix for some multi-core processors. Hope that it will be fixed soon.
- # make clean && make -j 2 && make install && make clean || { exit 1; }
- make clean && make && make install && make clean || { exit 1; }
+ ## Determine the maximum number of processes that Make can work with.
+ ## MinGW's Make doesn't work properly with multi-core processors.
+ OSVER=$(uname)
+ if [ ${OSVER:0:10} == MINGW32_NT ]; then
+ 	PROC_NR=2
+ else
+ 	PROC_NR=$(nproc)
+ fi
+
+ ## Compile and install. 
+ # make clean && make -j $PROC_NR && make install && make clean || { exit 1; }

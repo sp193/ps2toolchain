@@ -1,6 +1,6 @@
 diff -rupNb gcc-5.3.0-libgcc/gcc/config/mips/5900.md gcc-5.3.0-base/gcc/config/mips/5900.md
---- gcc-5.3.0-libgcc/gcc/config/mips/5900.md	Thu Jan  1 07:30:00 1970
-+++ gcc-5.3.0-base/gcc/config/mips/5900.md	Sun Apr  3 09:55:04 2016
+--- gcc-5.3.0-libgcc/gcc/config/mips/5900.md	1970-01-01 07:30:00.000000000 +0730
++++ gcc-5.3.0-base/gcc/config/mips/5900.md	2016-04-03 09:55:04.733127536 +0800
 @@ -0,0 +1,52 @@
 +;; Copyright (C) 2002-2015 Free Software Foundation, Inc.
 +;;
@@ -55,9 +55,9 @@ diff -rupNb gcc-5.3.0-libgcc/gcc/config/mips/5900.md gcc-5.3.0-base/gcc/config/m
 +  [(set_attr "type" "fadd")
 +   (set_attr "mode" "SF")])
 diff -rupNb gcc-5.3.0-libgcc/gcc/config/mips/constraints.md gcc-5.3.0-base/gcc/config/mips/constraints.md
---- gcc-5.3.0-libgcc/gcc/config/mips/constraints.md	Thu Jan 15 06:08:37 2015
-+++ gcc-5.3.0-base/gcc/config/mips/constraints.md	Sun Mar 27 16:06:00 2016
-@@ -36,8 +36,16 @@
+--- gcc-5.3.0-libgcc/gcc/config/mips/constraints.md	2015-01-15 06:08:37.000000000 +0800
++++ gcc-5.3.0-base/gcc/config/mips/constraints.md	2016-03-27 16:06:00.563416284 +0800
+@@ -36,10 +36,18 @@
    "The @code{lo} register.  Use this register to store values that are
     no bigger than a word.")
  
@@ -67,16 +67,18 @@ diff -rupNb gcc-5.3.0-libgcc/gcc/config/mips/constraints.md gcc-5.3.0-base/gcc/c
 +
  (define_register_constraint "x" "MD_REGS"
    "The concatenated @code{hi} and @code{lo} registers.  Use this register
-+   to store doubleword values.")
-+
-+(define_register_constraint "wr" "MD1_REGS"
-+  "The concatenated @code{hi1} and @code{lo1} registers.  Use this register
     to store doubleword values.")
  
++(define_register_constraint "wr" "MD1_REGS"
++  "The concatenated @code{hi1} and @code{lo1} registers.  Use this register
++   to store doubleword values.")
++
  (define_register_constraint "b" "ALL_REGS"
+   "@internal")
+ 
 diff -rupNb gcc-5.3.0-libgcc/gcc/config/mips/mips.c gcc-5.3.0-base/gcc/config/mips/mips.c
---- gcc-5.3.0-libgcc/gcc/config/mips/mips.c	Wed Aug  5 19:20:59 2015
-+++ gcc-5.3.0-base/gcc/config/mips/mips.c	Sun Mar 27 16:07:17 2016
+--- gcc-5.3.0-libgcc/gcc/config/mips/mips.c	2015-08-05 19:20:59.000000000 +0800
++++ gcc-5.3.0-base/gcc/config/mips/mips.c	2016-06-26 09:37:49.257944579 +0800
 @@ -734,7 +734,8 @@ const enum reg_class mips_regno_to_class
    COP3_REGS,	COP3_REGS,	COP3_REGS,	COP3_REGS,
    DSP_ACC_REGS,	DSP_ACC_REGS,	DSP_ACC_REGS,	DSP_ACC_REGS,
@@ -87,6 +89,24 @@ diff -rupNb gcc-5.3.0-libgcc/gcc/config/mips/mips.c gcc-5.3.0-base/gcc/config/mi
  };
  
  /* The value of TARGET_ATTRIBUTE_TABLE.  */
+@@ -4568,7 +4569,7 @@ mips_split_move (rtx dest, rtx src, enum
+       else
+ 	gcc_unreachable ();
+     }
+-  else if (REG_P (dest) && REGNO (dest) == MD_REG_FIRST)
++  else if (REG_P (dest) && (REGNO (dest) == MD_REG_FIRST || REGNO (dest) == MD1_REG_FIRST))
+     {
+       low_dest = mips_subword (dest, false);
+       mips_emit_move (low_dest, mips_subword (src, false));
+@@ -4577,7 +4578,7 @@ mips_split_move (rtx dest, rtx src, enum
+       else
+ 	emit_insn (gen_mthisi_di (dest, mips_subword (src, true), low_dest));
+     }
+-  else if (REG_P (src) && REGNO (src) == MD_REG_FIRST)
++  else if (REG_P (src) && (REGNO (src) == MD_REG_FIRST || REGNO (src) == MD1_REG_FIRST))
+     {
+       mips_emit_move (mips_subword (dest, false), mips_subword (src, false));
+       if (TARGET_64BIT)
 @@ -4678,6 +4679,9 @@ mips_output_move (rtx dest, rtx src)
  	  if (REGNO (dest) == LO_REGNUM)
  	    return "mtlo\t%z1";
@@ -117,7 +137,7 @@ diff -rupNb gcc-5.3.0-libgcc/gcc/config/mips/mips.c gcc-5.3.0-base/gcc/config/mi
     'D'	Print the second part of a double-word register or memory operand.
     'L'	Print the low-order register in a double-word register operand.
     'M'	Print high-order register in a double-word register operand.
-@@ -8580,6 +8588,11 @@ mips_print_operand (FILE *file, rtx op, 
+@@ -8580,6 +8588,11 @@ mips_print_operand (FILE *file, rtx op,
  	output_operand_lossage ("invalid use of '%%%c'", letter);
        break;
  
@@ -178,7 +198,7 @@ diff -rupNb gcc-5.3.0-libgcc/gcc/config/mips/mips.c gcc-5.3.0-base/gcc/config/mi
        {
  	mips_save_restore_reg (word_mode, regno, offset, fn);
  	offset -= UNITS_PER_WORD;
-@@ -11051,6 +11079,29 @@ mips_emit_save_slot_move (rtx dest, rtx 
+@@ -11051,6 +11079,29 @@ mips_emit_save_slot_move (rtx dest, rtx
  	  mips_emit_move (dest, temp);
  	}
      }
@@ -208,7 +228,7 @@ diff -rupNb gcc-5.3.0-libgcc/gcc/config/mips/mips.c gcc-5.3.0-base/gcc/config/mi
    else if (mips_direct_save_slot_move_p (regno, mem, mem == src))
      mips_emit_move (dest, src);
    else
-@@ -12148,6 +12199,12 @@ mips_hard_regno_mode_ok_p (unsigned int 
+@@ -12148,6 +12199,12 @@ mips_hard_regno_mode_ok_p (unsigned int
  	  if (size <= UNITS_PER_WORD * 2)
  	    return regno == (size <= UNITS_PER_WORD ? LO_REGNUM : MD_REG_FIRST);
  	}
@@ -367,8 +387,8 @@ diff -rupNb gcc-5.3.0-libgcc/gcc/config/mips/mips.c gcc-5.3.0-base/gcc/config/mi
  	mips_swap_registers (regno);
      }
 diff -rupNb gcc-5.3.0-libgcc/gcc/config/mips/mips.h gcc-5.3.0-base/gcc/config/mips/mips.h
---- gcc-5.3.0-libgcc/gcc/config/mips/mips.h	Tue Jan 20 07:05:41 2015
-+++ gcc-5.3.0-base/gcc/config/mips/mips.h	Sun Apr  3 10:04:54 2016
+--- gcc-5.3.0-libgcc/gcc/config/mips/mips.h	2015-01-20 07:05:41.000000000 +0800
++++ gcc-5.3.0-base/gcc/config/mips/mips.h	2016-04-03 10:04:54.761127496 +0800
 @@ -267,6 +267,7 @@ struct mips_cpu_info {
  #define TUNE_MIPS5000               (mips_tune == PROCESSOR_R5000)
  #define TUNE_MIPS5400               (mips_tune == PROCESSOR_R5400)
@@ -573,8 +593,8 @@ diff -rupNb gcc-5.3.0-libgcc/gcc/config/mips/mips.h gcc-5.3.0-base/gcc/config/mi
  /* List the "software" names for each register.  Also list the numerical
     names for $fp and $sp.  */
 diff -rupNb gcc-5.3.0-libgcc/gcc/config/mips/mips.md gcc-5.3.0-base/gcc/config/mips/mips.md
---- gcc-5.3.0-libgcc/gcc/config/mips/mips.md	Tue Mar  3 08:07:19 2015
-+++ gcc-5.3.0-base/gcc/config/mips/mips.md	Sun Apr  3 09:50:55 2016
+--- gcc-5.3.0-libgcc/gcc/config/mips/mips.md	2015-03-03 08:07:19.000000000 +0800
++++ gcc-5.3.0-base/gcc/config/mips/mips.md	2016-06-24 23:16:18.176239390 +0800
 @@ -222,7 +222,7 @@
  (define_attr "move_type"
    "unknown,load,fpload,store,fpstore,mtc,mfc,mtlo,mflo,imul,move,fmove,
@@ -644,20 +664,7 @@ diff -rupNb gcc-5.3.0-libgcc/gcc/config/mips/mips.md gcc-5.3.0-base/gcc/config/m
  	(const_string "none")))
  
  ;; Can the instruction be put into a delay slot?
-@@ -739,6 +749,12 @@
- 		(const_string "yes")
- 		(const_string "no")))
- 
-+;; True if an instruction uses a R5900 integer multiplication/division pipeline.
-+(define_attr "is_imuldiv_insn" "no,yes"
-+  (if_then_else (eq_attr "type" "imul,imul3,imadd,idiv")
-+		(const_string "yes")
-+		(const_string "no")))
-+
- ;; Describe a user's asm statement.
- (define_asm_attributes
-   [(set_attr "type" "multi")
-@@ -1095,6 +1111,7 @@
+@@ -1095,6 +1105,7 @@
  (include "5000.md")
  (include "5400.md")
  (include "5500.md")
@@ -665,7 +672,7 @@ diff -rupNb gcc-5.3.0-libgcc/gcc/config/mips/mips.md gcc-5.3.0-base/gcc/config/m
  (include "6000.md")
  (include "7000.md")
  (include "9000.md")
-@@ -1530,7 +1547,12 @@
+@@ -1530,7 +1541,12 @@
      emit_insn (gen_mul<mode>3_mul3_nohilo (operands[0], operands[1],
  					   operands[2]));
    else if (ISA_HAS_<D>MUL3)
@@ -678,7 +685,7 @@ diff -rupNb gcc-5.3.0-libgcc/gcc/config/mips/mips.md gcc-5.3.0-base/gcc/config/m
    else if (TARGET_MIPS16)
      {
        lo = gen_rtx_REG (<MODE>mode, LO_REGNUM);
-@@ -1566,17 +1588,34 @@
+@@ -1566,17 +1582,34 @@
  	(mult:GPR (match_operand:GPR 1 "register_operand" "d,d")
  		  (match_operand:GPR 2 "register_operand" "d,d")))
     (clobber (match_scratch:GPR 3 "=l,X"))]
@@ -715,7 +722,7 @@ diff -rupNb gcc-5.3.0-libgcc/gcc/config/mips/mips.md gcc-5.3.0-base/gcc/config/m
  ;; If a register gets allocated to LO, and we spill to memory, the reload
  ;; will include a move from LO to a GPR.  Merge it into the multiplication
  ;; if it can set the GPR directly.
-@@ -1601,13 +1640,21 @@
+@@ -1601,13 +1634,21 @@
          (clobber (match_dup 0))])])
  
  (define_insn "mul<mode>3_internal"
@@ -743,7 +750,7 @@ diff -rupNb gcc-5.3.0-libgcc/gcc/config/mips/mips.md gcc-5.3.0-base/gcc/config/m
  
  (define_insn "mul<mode>3_r4000"
    [(set (match_operand:GPR 0 "register_operand" "=d")
-@@ -1675,7 +1722,7 @@
+@@ -1675,7 +1716,7 @@
  		 (match_operand:SI 3 "register_operand" "0,0,d")))
     (clobber (match_scratch:SI 4 "=X,X,l"))
     (clobber (match_scratch:SI 5 "=X,X,&d"))]
@@ -752,7 +759,7 @@ diff -rupNb gcc-5.3.0-libgcc/gcc/config/mips/mips.md gcc-5.3.0-base/gcc/config/m
    "@
      madd\t%1,%2
      madd\t%1,%2
-@@ -1725,6 +1772,34 @@
+@@ -1725,6 +1766,34 @@
                    (const_string "yes")]
                (const_string "no")))])
  
@@ -787,7 +794,7 @@ diff -rupNb gcc-5.3.0-libgcc/gcc/config/mips/mips.md gcc-5.3.0-base/gcc/config/m
  ;; Split *mul_acc_si if both the source and destination accumulator
  ;; values are GPRs.
  (define_split
-@@ -1933,7 +2008,7 @@
+@@ -1933,7 +2002,7 @@
                             (match_operand:SI 3 "register_operand" "d,d,d"))))
     (clobber (match_scratch:SI 4 "=X,X,l"))
     (clobber (match_scratch:SI 5 "=X,X,&d"))]
@@ -796,7 +803,7 @@ diff -rupNb gcc-5.3.0-libgcc/gcc/config/mips/mips.md gcc-5.3.0-base/gcc/config/m
    "@
     msub\t%2,%3
     msub\t%2,%3
-@@ -2028,18 +2103,28 @@
+@@ -2028,18 +2097,28 @@
  ;; __builtin_mips_mult<u>() functions.  We must always make those functions
  ;; available if !TARGET_64BIT && ISA_HAS_DSP.
  (define_insn "<u>mulsidi3_32bit"
@@ -830,7 +837,7 @@ diff -rupNb gcc-5.3.0-libgcc/gcc/config/mips/mips.md gcc-5.3.0-base/gcc/config/m
  
  (define_insn "<u>mulsidi3_32bit_r4000"
    [(set (match_operand:DI 0 "register_operand" "=d")
-@@ -2053,11 +2138,11 @@
+@@ -2053,11 +2132,11 @@
     (set_attr "insn_count" "3")])
  
  (define_insn_and_split "<u>mulsidi3_64bit"
@@ -847,7 +854,7 @@ diff -rupNb gcc-5.3.0-libgcc/gcc/config/mips/mips.md gcc-5.3.0-base/gcc/config/m
    "TARGET_64BIT && !TARGET_FIX_R4000 && !ISA_HAS_DMUL3
     && !TARGET_MIPS16 && ISA_HAS_MULT"
    "#"
-@@ -2065,15 +2150,23 @@
+@@ -2065,15 +2144,23 @@
    [(const_int 0)]
  {
    emit_insn (gen_<u>mulsidi3_64bit_split (operands[0], operands[1],
@@ -874,7 +881,7 @@ diff -rupNb gcc-5.3.0-libgcc/gcc/config/mips/mips.md gcc-5.3.0-base/gcc/config/m
  
  (define_expand "<u>mulsidi3_64bit_mips16"
    [(set (match_operand:DI 0 "register_operand")
-@@ -2082,7 +2175,7 @@
+@@ -2082,7 +2169,7 @@
    "TARGET_64BIT && TARGET_MIPS16"
  {
    emit_insn (gen_<u>mulsidi3_64bit_split (operands[0], operands[1],
@@ -883,7 +890,7 @@ diff -rupNb gcc-5.3.0-libgcc/gcc/config/mips/mips.md gcc-5.3.0-base/gcc/config/m
    DONE;
  })
  
-@@ -2090,16 +2183,14 @@
+@@ -2090,16 +2177,14 @@
    [(set (match_operand:DI 0 "register_operand")
  	(mult:DI (any_extend:DI (match_operand:SI 1 "register_operand"))
  		 (any_extend:DI (match_operand:SI 2 "register_operand"))))
@@ -893,11 +900,11 @@ diff -rupNb gcc-5.3.0-libgcc/gcc/config/mips/mips.md gcc-5.3.0-base/gcc/config/m
    ""
  {
 -  rtx hilo;
--
--  hilo = gen_rtx_REG (TImode, MD_REG_FIRST);
--  emit_insn (gen_<u>mulsidi3_64bit_hilo (hilo, operands[1], operands[2]));
 +  emit_insn (gen_<u>mulsidi3_64bit_hilo (operands[4], operands[1], operands[2]));
  
+-  hilo = gen_rtx_REG (TImode, MD_REG_FIRST);
+-  emit_insn (gen_<u>mulsidi3_64bit_hilo (hilo, operands[1], operands[2]));
+-
 -  emit_move_insn (operands[0], gen_rtx_REG (DImode, LO_REGNUM));
 -  emit_insn (gen_mfhidi_ti (operands[3], hilo));
 +  emit_move_insn (operands[0], gen_rtx_REG (DImode, MD_REG_P ( REGNO (operands[4])) ? LO_REGNUM : LO1_REGNUM));
@@ -905,7 +912,7 @@ diff -rupNb gcc-5.3.0-libgcc/gcc/config/mips/mips.md gcc-5.3.0-base/gcc/config/m
  
    if (ISA_HAS_EXT_INS)
      emit_insn (gen_insvdi (operands[0], GEN_INT (32), GEN_INT (32),
-@@ -2120,16 +2211,24 @@
+@@ -2120,16 +2205,24 @@
  })
  
  (define_insn "<u>mulsidi3_64bit_hilo"
@@ -936,7 +943,7 @@ diff -rupNb gcc-5.3.0-libgcc/gcc/config/mips/mips.md gcc-5.3.0-base/gcc/config/m
  
  ;; See comment before the ISA_HAS_DMUL3 case in mips_mulsidi3_gen_fn.
  (define_insn "mulsidi3_64bit_dmul"
-@@ -2177,7 +2276,7 @@
+@@ -2177,7 +2270,7 @@
  	   (mult:DI
  	      (any_extend:DI (match_operand:SI 1 "register_operand" "d"))
  	      (any_extend:DI (match_operand:SI 2 "register_operand" "d")))))]
@@ -945,7 +952,7 @@ diff -rupNb gcc-5.3.0-libgcc/gcc/config/mips/mips.md gcc-5.3.0-base/gcc/config/m
  {
    if (ISA_HAS_DSP_MULT)
      return "msub<u>\t%q0,%1,%2";
-@@ -2446,12 +2545,12 @@
+@@ -2446,12 +2539,12 @@
  ;; See the comment above <u>msubsidi4 for the relationship between
  ;; ISA_HAS_DSP and ISA_HAS_DSP_MULT.
  (define_insn "<u>maddsidi4"
@@ -963,7 +970,7 @@ diff -rupNb gcc-5.3.0-libgcc/gcc/config/mips/mips.md gcc-5.3.0-base/gcc/config/m
     && !TARGET_64BIT"
  {
    if (TARGET_MAD)
-@@ -2460,13 +2559,23 @@
+@@ -2460,13 +2553,23 @@
      return "madd<u>\t%q0,%1,%2";
    else if (GENERATE_MADD_MSUB || TARGET_MIPS5500)
      return "madd<u>\t%1,%2";
@@ -989,7 +996,7 @@ diff -rupNb gcc-5.3.0-libgcc/gcc/config/mips/mips.md gcc-5.3.0-base/gcc/config/m
  
  ;; Floating point multiply accumulate instructions.
  
-@@ -2734,10 +2843,10 @@
+@@ -2734,10 +2837,10 @@
  })
  
  (define_insn_and_split "*divmod<mode>4"
@@ -1004,7 +1011,7 @@ diff -rupNb gcc-5.3.0-libgcc/gcc/config/mips/mips.md gcc-5.3.0-base/gcc/config/m
  	(mod:GPR (match_dup 1)
  		 (match_dup 2)))]
    "ISA_HAS_<D>DIV && !TARGET_FIX_VR4120 && !TARGET_MIPS16"
-@@ -2745,12 +2854,20 @@
+@@ -2745,12 +2848,20 @@
    "&& reload_completed"
    [(const_int 0)]
  {
@@ -1028,7 +1035,7 @@ diff -rupNb gcc-5.3.0-libgcc/gcc/config/mips/mips.md gcc-5.3.0-base/gcc/config/m
  
  ;; Expand generates divmod instructions for individual division and modulus
  ;; operations.  We then rely on CSE to reuse earlier divmods where possible.
-@@ -2771,7 +2888,7 @@
+@@ -2771,7 +2882,7 @@
    "&& cse_not_expected"
    [(const_int 0)]
  {
@@ -1037,7 +1044,7 @@ diff -rupNb gcc-5.3.0-libgcc/gcc/config/mips/mips.md gcc-5.3.0-base/gcc/config/m
    emit_move_insn (operands[0], operands[4]);
    DONE;
  }
-@@ -2799,10 +2916,10 @@
+@@ -2799,10 +2910,10 @@
  })
  
  (define_insn_and_split "*udivmod<mode>4"
@@ -1052,7 +1059,7 @@ diff -rupNb gcc-5.3.0-libgcc/gcc/config/mips/mips.md gcc-5.3.0-base/gcc/config/m
  	(umod:GPR (match_dup 1)
  		  (match_dup 2)))]
    "ISA_HAS_<D>DIV && !TARGET_MIPS16"
-@@ -2810,12 +2927,20 @@
+@@ -2810,12 +2921,20 @@
    "reload_completed"
    [(const_int 0)]
  {
@@ -1076,7 +1083,7 @@ diff -rupNb gcc-5.3.0-libgcc/gcc/config/mips/mips.md gcc-5.3.0-base/gcc/config/m
  
  ;; See the comment above "divmod<mode>4_mips16" for the split timing.
  (define_insn_and_split "udivmod<mode>4_mips16"
-@@ -2831,7 +2956,7 @@
+@@ -2831,7 +2950,7 @@
    "cse_not_expected"
    [(const_int 0)]
  {
@@ -1085,7 +1092,7 @@ diff -rupNb gcc-5.3.0-libgcc/gcc/config/mips/mips.md gcc-5.3.0-base/gcc/config/m
    emit_move_insn (operands[0], operands[4]);
    DONE;
  }
-@@ -2842,21 +2967,22 @@
+@@ -2842,21 +2961,22 @@
  (define_expand "<u>divmod<mode>4_split"
    [(set (match_operand:GPR 0 "register_operand")
  	(any_mod:GPR (match_operand:GPR 1 "register_operand")
@@ -1111,7 +1118,7 @@ diff -rupNb gcc-5.3.0-libgcc/gcc/config/mips/mips.md gcc-5.3.0-base/gcc/config/m
        emit_insn (gen_<u>divmod<mode>4_hilo_di (hilo, operands[1],
  					       operands[2]));
        emit_insn (gen_mfhi<mode>_di (operands[0], hilo));
-@@ -2865,15 +2991,23 @@
+@@ -2865,15 +2985,23 @@
  })
  
  (define_insn "<u>divmod<GPR:mode>4_hilo_<HILO:mode>"
@@ -1141,7 +1148,7 @@ diff -rupNb gcc-5.3.0-libgcc/gcc/config/mips/mips.md gcc-5.3.0-base/gcc/config/m
  
  ;; Integer division and modulus.
  
-@@ -5109,26 +5243,42 @@
+@@ -5109,26 +5237,42 @@
  ;; instead of MFHI.  This avoids both the normal MIPS III hi/lo hazards
  ;; and the errata related to -mfix-vr4130.
  (define_insn "mfhi<GPR:mode>_<HILO:mode>"
@@ -1196,8 +1203,8 @@ diff -rupNb gcc-5.3.0-libgcc/gcc/config/mips/mips.md gcc-5.3.0-base/gcc/config/m
  ;; Emit a doubleword move in which exactly one of the operands is
  ;; a floating-point register.  We can't just emit two normal moves
 diff -rupNb gcc-5.3.0-libgcc/gcc/config/mips/predicates.md gcc-5.3.0-base/gcc/config/mips/predicates.md
---- gcc-5.3.0-libgcc/gcc/config/mips/predicates.md	Thu Jan 15 18:44:57 2015
-+++ gcc-5.3.0-base/gcc/config/mips/predicates.md	Sun Mar 27 16:06:00 2016
+--- gcc-5.3.0-libgcc/gcc/config/mips/predicates.md	2015-01-15 18:44:57.000000000 +0800
++++ gcc-5.3.0-base/gcc/config/mips/predicates.md	2016-03-27 16:06:00.571416277 +0800
 @@ -244,11 +244,13 @@
  
  (define_predicate "lo_operand"

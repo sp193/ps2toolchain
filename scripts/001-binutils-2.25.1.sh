@@ -1,6 +1,6 @@
 #!/bin/bash
 # binutils-2.25.1.sh by SP193 (ysai187@yahoo.com)
-# Originally binutils-2.14.sh by Dan Peori (danpeori@oopo.net)
+# Based on binutils-2.14.sh by Dan Peori (danpeori@oopo.net)
 # There is poor support for the "dvp" because I never worked with it
 # and don't actually understand why the old changes were necessary.
 
@@ -23,6 +23,15 @@
  targets=("mips64r5900el-ps2-elf" "mipsel-ps2-irx" "dvp")
  extra_opts=("--with-float=hard" "" "--with-float=hard")
 
+ ## Determine the maximum number of processes that Make can work with.
+ ## MinGW's Make doesn't work properly with multi-core processors.
+ OSVER=$(uname)
+ if [ ${OSVER:0:10} == MINGW32_NT ]; then
+ 	PROC_NR=2
+ else
+ 	PROC_NR=$(nproc)
+ fi
+
  ## For each target...
  for ((i=0; i<${#target_names[@]}; i++)); do
   TARG_NAME=${target_names[i]}
@@ -36,7 +45,7 @@
   ../configure --prefix="$PS2DEV/$TARG_NAME" --target="$TARGET" $TARG_XTRA_OPTS || { exit 1; }
 
   ## Compile and install.
-  make clean && make -j 2 && make install && make clean || { exit 1; }
+  make clean && make -j $PROC_NR && make install && make clean || { exit 1; }
 
   ## Exit the build directory.
   cd .. || { exit 1; }
