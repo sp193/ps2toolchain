@@ -15,6 +15,11 @@
 
  ## Enter the source directory and patch the source code.
  cd binutils-$BINUTILS_VERSION || { exit 1; }
+
+ ## Apply the uncommitted patches first
+ ## TODO: Remove these lines, once the patches are submitted.
+ cat ../../patches/binutils-2.25.1-slb.patch | patch -p1 || { exit 1; }
+
  if [ -e ../../patches/binutils-$BINUTILS_VERSION-PS2.patch ]; then
  	cat ../../patches/binutils-$BINUTILS_VERSION-PS2.patch | patch -p1 || { exit 1; }
  fi

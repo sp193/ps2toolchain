@@ -1,0 +1,206 @@
+diff -rupNb gcc-5.3.0-libgcc/gcc/config/mips/mips.c gcc-5.3.0-slb/gcc/config/mips/mips.c
+--- gcc-5.3.0-libgcc/gcc/config/mips/mips.c	2016-07-03 13:35:33.295522323 +0800
++++ gcc-5.3.0-slb/gcc/config/mips/mips.c	2016-07-03 13:30:18.395516281 +0800
+@@ -16866,6 +16866,181 @@ mips16_split_long_branches (void)
+   while (something_changed);
+ }
+ 
++/*  The R5900 has a bug, which may result in a loop ending prematurely
++    if all of these conditions are satisfied:
++
++    * A loop consisting of six or less instructions in length (including branch delay slot).
++    * A loop consists of only one conditional branch instruction, at its end.
++    * EE revision 2.9 (PRId 0x2E14) and later: the instruction in the branch delay
++	slot of the loop's jump/branch instruction is not a NOP.  */
++
++#define R5900_LOOP_MIN_LEN 6
++
++enum R5900_SEQ_TYPE
++{
++	R5900_SEQ_TYPE_JUMP,
++	R5900_SEQ_TYPE_RESET,
++	R5900_SEQ_TYPE_OTHER
++};
++
++static int
++r5900_is_nop_insn(rtx insn)
++{
++  return (rtx_equal_p (insn, gen_nop ()));
++}
++
++static enum R5900_SEQ_TYPE
++r5900_detect_sequence_type (rtx_insn *insn, int *count_p, rtx_insn **jump_insn_p, int *seen_before, int after_delayed_branch_sched)
++{
++  rtx_insn *v_insn;
++  int i, jump_detected;
++
++  jump_detected = 0;
++  for (i = 0; i < XVECLEN (PATTERN (insn), 0); i++)
++    {
++      v_insn = as_a <rtx_insn *> XVECEXP (PATTERN (insn), 0, i);
++      switch (GET_CODE (v_insn))
++        {
++          case CODE_LABEL:
++            seen_before [INSN_UID (v_insn)] = *count_p;
++            break;
++          case INSN:
++            /* attr_length may not be the same as the actual instruction length.
++               Do not use it in the after_delayed_branch_sched phase.  */
++            *count_p += (get_attr_length (insn) > 0
++                         && !after_delayed_branch_sched ) 
++                           ? get_attr_length (insn) : 1;
++            if (jump_detected)
++              {
++                /* A jump was found. Inspect its branch delay slot.  */
++                return (r5900_is_nop_insn (PATTERN (v_insn))) ? R5900_SEQ_TYPE_RESET : R5900_SEQ_TYPE_JUMP;
++              }
++            break;
++          case JUMP_INSN:
++            *jump_insn_p = v_insn;
++            jump_detected = 1;
++            break;
++          case CALL_INSN:
++            return R5900_SEQ_TYPE_RESET;
++          default:
++            break;
++        }
++    }
++
++  if (jump_detected) 
++    {
++      /* A jump was found, but there is no instruction within its branch delay slot at this point.
++         GAS will fill it up with a NOP.  */
++      return R5900_SEQ_TYPE_RESET;
++    }
++
++  return R5900_SEQ_TYPE_OTHER;
++}
++
++static void
++r5900_reset_detection (int *seen_before, int max_uid)
++{
++  memset (seen_before, 0, sizeof (int) * max_uid);
++}
++
++static void
++r5900_handle_jump (rtx_insn *insn, rtx_insn *jump_insn, int *seen_before, int max_uid, int in_sequence, int length_so_far)
++{
++  int length;
++  rtx target;
++  rtx_insn *prev_insn;
++
++  if (any_condjump_p (jump_insn) || simplejump_p (jump_insn))
++    {
++      target = condjump_label (jump_insn);
++      if (seen_before [INSN_UID (XEXP (target, 0))])
++        {
++          length = length_so_far - seen_before [INSN_UID (XEXP (target, 0))];
++
++          if (!in_sequence)
++            {
++              /* Insert one NOP before the jump,
++                 if the loop length is less or equal to R5900_LOOP_MIN_LEN.  */
++              if (length <= R5900_LOOP_MIN_LEN)
++                {
++                  prev_insn = PREV_INSN (jump_insn);
++                  while (prev_insn && (GET_CODE (prev_insn) != INSN))
++                    prev_insn = PREV_INSN (prev_insn);
++                  if (prev_insn && !r5900_is_nop_insn (PATTERN (prev_insn)))
++                    emit_insn_before (gen_nop (), jump_insn);
++                }
++            }
++          else 
++            {
++              for (; length <= R5900_LOOP_MIN_LEN; length++) 
++                emit_insn_before (gen_nop(), insn);
++            }
++        }
++    }
++
++  r5900_reset_detection (seen_before, max_uid);
++}
++
++static void
++r5900_lengthen_loops (int after_delayed_branch_sched)
++{
++  rtx_insn *insn, *this_jump_insn;
++  int n, max_uid, in_sequence;
++  int *seen_before;
++  R5900_SEQ_TYPE sequence;
++
++  max_uid = get_max_uid ();
++  seen_before = (int*)alloca (sizeof (int) * max_uid);
++  r5900_reset_detection (seen_before, max_uid);
++
++  for (insn = get_insns (), n = 1, in_sequence = 0, this_jump_insn = NULL; insn; insn = NEXT_INSN (insn))
++    {
++      in_sequence = 0;
++      switch (GET_CODE (insn))
++        {
++          case CODE_LABEL:
++            seen_before [INSN_UID (insn)] = n;
++            break;
++
++          case INSN:
++            if (GET_CODE (PATTERN (insn)) != SEQUENCE)
++              {
++                /* attr_length may not be the same as the actual instruction length.
++                   Do not use it in the after_delayed_branch_sched phase.  */
++                n += (get_attr_length (insn) > 0
++                      && !after_delayed_branch_sched)
++                        ? get_attr_length (insn) : 1; 
++                break;
++              }
++
++            sequence = r5900_detect_sequence_type (insn, &n, &this_jump_insn, seen_before, after_delayed_branch_sched);
++            switch (sequence)
++              {
++                case R5900_SEQ_TYPE_RESET:
++                  r5900_reset_detection (seen_before, max_uid);
++                  break;
++                case R5900_SEQ_TYPE_JUMP:
++                  in_sequence = 1;
++                  r5900_handle_jump (insn, this_jump_insn, seen_before, max_uid, in_sequence, n);
++                  break;
++                default:
++                  break;
++              }
++            break;
++          case JUMP_INSN:
++            this_jump_insn = insn;
++            in_sequence = 0;
++            r5900_handle_jump (insn, this_jump_insn, seen_before, max_uid, in_sequence, n);
++            break;
++          case CALL_INSN:
++            r5900_reset_detection (seen_before, max_uid);
++            break;
++          default:
++            break;
++        }
++     }
++}
++
+ /* Implement TARGET_MACHINE_DEPENDENT_REORG.  */
+ 
+ static void
+@@ -16882,6 +17057,8 @@ mips_reorg (void)
+       mips_df_reorg ();
+       free_bb_for_insn ();
+     }
++  if (TARGET_MIPS5900)
++    r5900_lengthen_loops (0);
+ }
+ 
+ /* We use a machine specific pass to do a second machine dependent reorg
+@@ -16901,6 +17078,11 @@ mips_machine_reorg2 (void)
+        optimizations, but this should be an extremely rare case anyhow.  */
+     mips_reorg_process_insns ();
+   mips16_split_long_branches ();
++  if (TARGET_MIPS5900)
++    /* For EE revision 2.9 and later, the loops do not have to be
++       lengthened if the branch delay slot contains a NOP.
++       Therefore, make further adjustments if necessary.  */
++    r5900_lengthen_loops (1);
+   return 0;
+ }
+ 

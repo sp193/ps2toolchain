@@ -14,9 +14,10 @@
  ## Enter the source directory and patch the source code.
  cd gcc-$GCC_VERSION || { exit 1; }
 
- ## Apply the uncommitted patches first (libgcc, EE-core extensions, MMI)
+ ## Apply the uncommitted patches first (libgcc, short-loop bug, EE-core extensions, MMI)
  ## TODO: Remove these lines, once the patches are submitted.
  cat ../../patches/gcc-$GCC_VERSION-libgcc.patch | patch -p1 || { exit 1; }
+ cat ../../patches/gcc-$GCC_VERSION-slb.patch | patch -p1 || { exit 1; }
  cat ../../patches/gcc-$GCC_VERSION-ee.patch | patch -p1 || { exit 1; }
  cat ../../patches/gcc-$GCC_VERSION-mmi.patch | patch -p1 || { exit 1; }
 

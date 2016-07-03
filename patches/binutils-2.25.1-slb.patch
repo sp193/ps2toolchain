@@ -1,0 +1,102 @@
+diff -rupNb binutils-2.25.1-orig/gas/config/tc-mips.c binutils-2.25.1/gas/config/tc-mips.c
+--- binutils-2.25.1-orig/gas/config/tc-mips.c	2014-12-23 16:47:10.000000000 +0800
++++ binutils-2.25.1/gas/config/tc-mips.c	2016-07-02 10:24:04.013435475 +0800
+@@ -14783,6 +14783,81 @@ write_reloc_insn (char *buf, bfd_reloc_c
+     write_insn (buf, insn);
+ }
+ 
++/*  The R5900 has a bug, which may result in a loop ending
++    prematurely if all of these conditions are satisfied:
++
++    * A loop consisting of six or less instructions in length (including branch delay slot).
++    * A loop consists of only one conditional branch instruction, at its end.
++    * EE revision 2.9 (PRId 0x2E14) and later: the instruction in the branch delay
++	slot of the loop's jump/branch instruction is not a NOP.  */
++
++#define R5900_LOOP_MIN_LEN 6
++
++static int
++r5900_check_short_loop (int rel_loop_target, fixS *fixP)
++{
++  char *buf;
++  int fragment_size, i, jump;
++  unsigned long insn, op, subop;
++
++  /* Check the loop length.
++     If it is longer than required or jumps forward (i.e. not a loop), then it is not a problem.  */
++  if (rel_loop_target < 0
++      || rel_loop_target > (fixP->fx_where / 4)
++      || rel_loop_target > (R5900_LOOP_MIN_LEN - 2))
++    return 0;
++
++  /* Check if the instruction in the branch delay slot is a NOP.  */
++  fragment_size = fixP->fx_frag->fr_fix + fixP->fx_frag->fr_offset * fixP->fx_frag->fr_var;
++  if ((fixP->fx_where + 4) <= fragment_size)
++    {
++      if (read_insn ((char *)(fixP->fx_where + fixP->fx_frag->fr_literal) + 4) == 0)
++        return 0;
++    }
++
++  /* Scan through the loop, checking if there are other branch/jump instructions within it.  */
++  buf = (char *) (fixP->fx_where + fixP->fx_frag->fr_literal);
++  for (i = 0, jump = 0, buf -= 4; i < rel_loop_target && !jump ; i++, buf -= 4)
++    {
++       insn = read_insn (buf);
++       op = insn >> 26;
++
++       switch (op)
++         {
++           case 16:	/* cop0 */
++           case 17:	/* cop1 */
++           case 18:	/* cop2 */
++             /* Check for bc?f, bc?t, bc?fl or bc?tl.  */
++             subop = (insn >> 21) & 0x1f;
++             if (subop == 8)
++               jump = 1;
++             break;
++           case 1:	/* branch or trap */
++           case 2:	/* j xx */
++           case 3:	/* jal xx */
++           case 4:	/* beq s,t, xx */
++           case 5:	/* bne s,t, xx */
++           case 6:	/* blez s,t, xx */
++           case 7:	/* bgtz s,t, xx */
++           case 20:	/* beql s,t, xx */
++           case 21:	/* bnezl/bnel */
++           case 22:	/* blezl s, xx */
++           case 23:	/* bgtzl s, xx */
++             jump = 1;
++             break;
++           case 0:
++             subop = insn & 0x3f;
++             if (subop == 8		/* jr   */
++                 || subop == 9		/* jalr */
++                 || subop == 15)	/* sync */
++               jump = 1;
++             break;
++         }
++    }
++
++  return (jump ? 0 : 1);
++}
++
+ /* Apply a fixup to the object file.  */
+ 
+ void
+@@ -15048,6 +15123,16 @@ md_apply_fix (fixS *fixP, valueT *valP,
+       /* Update old instruction data.  */
+       insn = read_insn (buf);
+ 
++      if (mips_opts.arch == CPU_R5900
++          && ((insn & 0xffff0000) == 0x10000000	 	/* beq $0,$0 */
++	      || (insn & 0xffff0000) == 0x04010000	/* bgez $0 */
++	      || (insn & 0xffff0000) == 0x04110000))	/* bgezal $0 */
++        {
++          if ( r5900_check_short_loop ( -((*valP >> 2) + 1), fixP))
++	    as_warn_where (fixP->fx_file, fixP->fx_line,
++			   _("Loop is too short for the r5900"));
++        }
++
+       if (*valP + 0x20000 <= 0x3ffff)
+ 	{
+ 	  insn |= (*valP >> 2) & 0xffff;

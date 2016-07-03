@@ -1,5 +1,5 @@
-diff -rupNb gcc-5.3.0-libgcc/gcc/config/mips/5900.md gcc-5.3.0-base/gcc/config/mips/5900.md
---- gcc-5.3.0-libgcc/gcc/config/mips/5900.md	1970-01-01 07:30:00.000000000 +0730
+diff -rupNb gcc-5.3.0-slb/gcc/config/mips/5900.md gcc-5.3.0-base/gcc/config/mips/5900.md
+--- gcc-5.3.0-slb/gcc/config/mips/5900.md	1970-01-01 07:30:00.000000000 +0730
 +++ gcc-5.3.0-base/gcc/config/mips/5900.md	2016-04-03 09:55:04.733127536 +0800
 @@ -0,0 +1,52 @@
 +;; Copyright (C) 2002-2015 Free Software Foundation, Inc.
@@ -54,8 +54,8 @@ diff -rupNb gcc-5.3.0-libgcc/gcc/config/mips/5900.md gcc-5.3.0-base/gcc/config/m
 +  "max.s\t%0,%1,%2"
 +  [(set_attr "type" "fadd")
 +   (set_attr "mode" "SF")])
-diff -rupNb gcc-5.3.0-libgcc/gcc/config/mips/constraints.md gcc-5.3.0-base/gcc/config/mips/constraints.md
---- gcc-5.3.0-libgcc/gcc/config/mips/constraints.md	2015-01-15 06:08:37.000000000 +0800
+diff -rupNb gcc-5.3.0-slb/gcc/config/mips/constraints.md gcc-5.3.0-base/gcc/config/mips/constraints.md
+--- gcc-5.3.0-slb/gcc/config/mips/constraints.md	2015-01-15 06:08:37.000000000 +0800
 +++ gcc-5.3.0-base/gcc/config/mips/constraints.md	2016-03-27 16:06:00.563416284 +0800
 @@ -36,10 +36,18 @@
    "The @code{lo} register.  Use this register to store values that are
@@ -76,9 +76,9 @@ diff -rupNb gcc-5.3.0-libgcc/gcc/config/mips/constraints.md gcc-5.3.0-base/gcc/c
  (define_register_constraint "b" "ALL_REGS"
    "@internal")
  
-diff -rupNb gcc-5.3.0-libgcc/gcc/config/mips/mips.c gcc-5.3.0-base/gcc/config/mips/mips.c
---- gcc-5.3.0-libgcc/gcc/config/mips/mips.c	2015-08-05 19:20:59.000000000 +0800
-+++ gcc-5.3.0-base/gcc/config/mips/mips.c	2016-06-26 09:37:49.257944579 +0800
+diff -rupNb gcc-5.3.0-slb/gcc/config/mips/mips.c gcc-5.3.0-base/gcc/config/mips/mips.c
+--- gcc-5.3.0-slb/gcc/config/mips/mips.c	2016-07-03 13:30:18.395516281 +0800
++++ gcc-5.3.0-base/gcc/config/mips/mips.c	2016-07-03 13:22:26.111507223 +0800
 @@ -734,7 +734,8 @@ const enum reg_class mips_regno_to_class
    COP3_REGS,	COP3_REGS,	COP3_REGS,	COP3_REGS,
    DSP_ACC_REGS,	DSP_ACC_REGS,	DSP_ACC_REGS,	DSP_ACC_REGS,
@@ -343,7 +343,7 @@ diff -rupNb gcc-5.3.0-libgcc/gcc/config/mips/mips.c gcc-5.3.0-base/gcc/config/mi
  		  last_insn = insn;
  		}
  	    }
-@@ -17739,6 +17808,8 @@ mips_option_override (void)
+@@ -17926,6 +17995,8 @@ mips_option_override (void)
    mips_dbx_regno[LO_REGNUM] = MD_DBX_FIRST + 1;
    mips_dwarf_regno[HI_REGNUM] = MD_REG_FIRST + 0;
    mips_dwarf_regno[LO_REGNUM] = MD_REG_FIRST + 1;
@@ -352,7 +352,7 @@ diff -rupNb gcc-5.3.0-libgcc/gcc/config/mips/mips.c gcc-5.3.0-base/gcc/config/mi
    for (i = DSP_ACC_REG_FIRST; i <= DSP_ACC_REG_LAST; i += 2)
      {
        mips_dwarf_regno[i + TARGET_LITTLE_ENDIAN] = i;
-@@ -17867,8 +17938,16 @@ mips_conditional_register_usage (void)
+@@ -18054,8 +18125,16 @@ mips_conditional_register_usage (void)
  			    reg_class_contents[(int) DSP_ACC_REGS]);
  
    if (!ISA_HAS_HILO)
@@ -369,7 +369,7 @@ diff -rupNb gcc-5.3.0-libgcc/gcc/config/mips/mips.c gcc-5.3.0-base/gcc/config/mi
  
    if (!TARGET_HARD_FLOAT)
      {
-@@ -17927,6 +18006,8 @@ mips_conditional_register_usage (void)
+@@ -18114,6 +18193,8 @@ mips_conditional_register_usage (void)
  	 for them) and one-way registers cannot easily be reloaded.  */
        AND_COMPL_HARD_REG_SET (operand_reg_set,
  			      reg_class_contents[(int) MD_REGS]);
@@ -378,7 +378,7 @@ diff -rupNb gcc-5.3.0-libgcc/gcc/config/mips/mips.c gcc-5.3.0-base/gcc/config/mi
      }
    /* $f20-$f23 are call-clobbered for n64.  */
    if (mips_abi == ABI_64)
-@@ -17952,6 +18033,7 @@ mips_conditional_register_usage (void)
+@@ -18139,6 +18220,7 @@ mips_conditional_register_usage (void)
        unsigned int regno;
  
        mips_swap_registers (MD_REG_FIRST);
@@ -386,8 +386,8 @@ diff -rupNb gcc-5.3.0-libgcc/gcc/config/mips/mips.c gcc-5.3.0-base/gcc/config/mi
        for (regno = DSP_ACC_REG_FIRST; regno <= DSP_ACC_REG_LAST; regno += 2)
  	mips_swap_registers (regno);
      }
-diff -rupNb gcc-5.3.0-libgcc/gcc/config/mips/mips.h gcc-5.3.0-base/gcc/config/mips/mips.h
---- gcc-5.3.0-libgcc/gcc/config/mips/mips.h	2015-01-20 07:05:41.000000000 +0800
+diff -rupNb gcc-5.3.0-slb/gcc/config/mips/mips.h gcc-5.3.0-base/gcc/config/mips/mips.h
+--- gcc-5.3.0-slb/gcc/config/mips/mips.h	2015-01-20 07:05:41.000000000 +0800
 +++ gcc-5.3.0-base/gcc/config/mips/mips.h	2016-04-03 10:04:54.761127496 +0800
 @@ -267,6 +267,7 @@ struct mips_cpu_info {
  #define TUNE_MIPS5000               (mips_tune == PROCESSOR_R5000)
@@ -592,8 +592,8 @@ diff -rupNb gcc-5.3.0-libgcc/gcc/config/mips/mips.h gcc-5.3.0-base/gcc/config/mi
  
  /* List the "software" names for each register.  Also list the numerical
     names for $fp and $sp.  */
-diff -rupNb gcc-5.3.0-libgcc/gcc/config/mips/mips.md gcc-5.3.0-base/gcc/config/mips/mips.md
---- gcc-5.3.0-libgcc/gcc/config/mips/mips.md	2015-03-03 08:07:19.000000000 +0800
+diff -rupNb gcc-5.3.0-slb/gcc/config/mips/mips.md gcc-5.3.0-base/gcc/config/mips/mips.md
+--- gcc-5.3.0-slb/gcc/config/mips/mips.md	2015-03-03 08:07:19.000000000 +0800
 +++ gcc-5.3.0-base/gcc/config/mips/mips.md	2016-06-24 23:16:18.176239390 +0800
 @@ -222,7 +222,7 @@
  (define_attr "move_type"
@@ -1202,8 +1202,8 @@ diff -rupNb gcc-5.3.0-libgcc/gcc/config/mips/mips.md gcc-5.3.0-base/gcc/config/m
  
  ;; Emit a doubleword move in which exactly one of the operands is
  ;; a floating-point register.  We can't just emit two normal moves
-diff -rupNb gcc-5.3.0-libgcc/gcc/config/mips/predicates.md gcc-5.3.0-base/gcc/config/mips/predicates.md
---- gcc-5.3.0-libgcc/gcc/config/mips/predicates.md	2015-01-15 18:44:57.000000000 +0800
+diff -rupNb gcc-5.3.0-slb/gcc/config/mips/predicates.md gcc-5.3.0-base/gcc/config/mips/predicates.md
+--- gcc-5.3.0-slb/gcc/config/mips/predicates.md	2015-01-15 18:44:57.000000000 +0800
 +++ gcc-5.3.0-base/gcc/config/mips/predicates.md	2016-03-27 16:06:00.571416277 +0800
 @@ -244,11 +244,13 @@
  

@@ -1,6 +1,6 @@
-diff -rupNb gcc-5.3.0-mmi/config.sub gcc-5.3.0-full/config.sub
+diff -rupNb gcc-5.3.0-mmi/config.sub gcc-5.3.0-dvp/config.sub
 --- gcc-5.3.0-mmi/config.sub	2015-01-02 17:30:21.000000000 +0800
-+++ gcc-5.3.0-full/config.sub	2016-04-03 17:07:06.847986617 +0800
++++ gcc-5.3.0-dvp/config.sub	2016-07-03 13:36:54.395523879 +0800
 @@ -765,6 +765,10 @@ case $basic_machine in
  		basic_machine=i386-unknown
  		os=-vsta
@@ -22,9 +22,9 @@ diff -rupNb gcc-5.3.0-mmi/config.sub gcc-5.3.0-full/config.sub
  	# Remember, each alternative MUST END IN *, to match a version number.
  		;;
  	-qnx*)
-diff -rupNb gcc-5.3.0-mmi/configure gcc-5.3.0-full/configure
+diff -rupNb gcc-5.3.0-mmi/configure gcc-5.3.0-dvp/configure
 --- gcc-5.3.0-mmi/configure	2015-05-04 01:29:57.000000000 +0800
-+++ gcc-5.3.0-full/configure	2016-04-03 17:07:06.851986617 +0800
++++ gcc-5.3.0-dvp/configure	2016-07-03 13:36:54.399523879 +0800
 @@ -3402,6 +3402,8 @@ case "${target}" in
      ;;
    mips*-*-linux*)
@@ -34,9 +34,9 @@ diff -rupNb gcc-5.3.0-mmi/configure gcc-5.3.0-full/configure
    powerpc*-*-linux*)
      ;;
    powerpc-*-darwin*)
-diff -rupNb gcc-5.3.0-mmi/configure.ac gcc-5.3.0-full/configure.ac
+diff -rupNb gcc-5.3.0-mmi/configure.ac gcc-5.3.0-dvp/configure.ac
 --- gcc-5.3.0-mmi/configure.ac	2015-05-04 01:29:57.000000000 +0800
-+++ gcc-5.3.0-full/configure.ac	2016-04-03 17:07:06.855986616 +0800
++++ gcc-5.3.0-dvp/configure.ac	2016-07-03 13:36:54.403523879 +0800
 @@ -749,6 +749,8 @@ case "${target}" in
      ;;
    mips*-*-linux*)
@@ -46,9 +46,9 @@ diff -rupNb gcc-5.3.0-mmi/configure.ac gcc-5.3.0-full/configure.ac
    powerpc*-*-linux*)
      ;;
    powerpc-*-darwin*)
-diff -rupNb gcc-5.3.0-mmi/gcc/config.gcc gcc-5.3.0-full/gcc/config.gcc
+diff -rupNb gcc-5.3.0-mmi/gcc/config.gcc gcc-5.3.0-dvp/gcc/config.gcc
 --- gcc-5.3.0-mmi/gcc/config.gcc	2015-09-10 22:17:53.000000000 +0800
-+++ gcc-5.3.0-full/gcc/config.gcc	2016-04-03 17:07:06.855986616 +0800
++++ gcc-5.3.0-dvp/gcc/config.gcc	2016-07-03 13:36:54.403523879 +0800
 @@ -2161,6 +2161,11 @@ mips64r5900-*-elf* | mips64r5900el-*-elf
  	tmake_file="mips/t-elf"
  	tm_defines="${tm_defines} MIPS_ISA_DEFAULT=3 MIPS_ABI_DEFAULT=ABI_N32"
@@ -61,11 +61,11 @@ diff -rupNb gcc-5.3.0-mmi/gcc/config.gcc gcc-5.3.0-full/gcc/config.gcc
  mips64-*-elf* | mips64el-*-elf*)
  	tm_file="elfos.h newlib-stdint.h ${tm_file} mips/elf.h"
  	tmake_file="mips/t-elf"
-diff -rupNb gcc-5.3.0-mmi/libgcc/config.host gcc-5.3.0-full/libgcc/config.host
---- gcc-5.3.0-mmi/libgcc/config.host	2016-03-27 16:02:44.000000000 +0800
-+++ gcc-5.3.0-full/libgcc/config.host	2016-04-03 17:07:06.859986617 +0800
-@@ -889,6 +889,9 @@ mips-*-elf* | mipsel-*-elf*)
- 	fi
+diff -rupNb gcc-5.3.0-mmi/libgcc/config.host gcc-5.3.0-dvp/libgcc/config.host
+--- gcc-5.3.0-mmi/libgcc/config.host	2016-07-03 13:24:42.191509834 +0800
++++ gcc-5.3.0-dvp/libgcc/config.host	2016-07-03 13:36:54.403523879 +0800
+@@ -881,6 +881,9 @@ mips-*-elf* | mipsel-*-elf*)
+     fi
  	extra_parts="$extra_parts crti.o crtn.o"
  	;;
 +mipsel-*-irx)

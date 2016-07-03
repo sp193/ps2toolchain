@@ -964,8 +964,8 @@ diff -rupNb gcc-5.3.0-base/gcc/config/mips/constraints.md gcc-5.3.0-mmi/gcc/conf
    "@internal")
  
 diff -rupNb gcc-5.3.0-base/gcc/config/mips/mips.c gcc-5.3.0-mmi/gcc/config/mips/mips.c
---- gcc-5.3.0-base/gcc/config/mips/mips.c	2016-06-26 09:37:49.257944579 +0800
-+++ gcc-5.3.0-mmi/gcc/config/mips/mips.c	2016-06-26 09:41:37.197943980 +0800
+--- gcc-5.3.0-base/gcc/config/mips/mips.c	2016-07-03 13:22:26.111507223 +0800
++++ gcc-5.3.0-mmi/gcc/config/mips/mips.c	2016-07-03 13:24:42.183509832 +0800
 @@ -735,7 +735,7 @@ const enum reg_class mips_regno_to_class
    DSP_ACC_REGS,	DSP_ACC_REGS,	DSP_ACC_REGS,	DSP_ACC_REGS,
    DSP_ACC_REGS,	DSP_ACC_REGS,	ALL_REGS,	ALL_REGS,
@@ -1344,19 +1344,7 @@ diff -rupNb gcc-5.3.0-base/gcc/config/mips/mips.c gcc-5.3.0-mmi/gcc/config/mips/
        case HAZARD_DELAY:
  	set = single_set (insn);
  	gcc_assert (set);
-@@ -17507,6 +17721,11 @@ mips_option_override (void)
-     error ("unsupported combination: %s",
- 	   "-march=r5900 -mhard-float -mdouble-float");
- 
-+  /* The R5900 does not support some MIPS16 instructions.  */
-+  if (TARGET_MIPS5900 && ((mips_base_compression_flags & MASK_MIPS16) != 0))
-+	  error("unsupported combination: %s",
-+		  "-march=r5900 -mips16");
-+
-   /* If a -mlong* option was given, check that it matches the ABI,
-      otherwise infer the -mlong* setting from the other options.  */
-   if ((target_flags_explicit & MASK_LONG64) != 0)
-@@ -17946,8 +18165,18 @@ mips_conditional_register_usage (void)
+@@ -18133,8 +18347,18 @@ mips_conditional_register_usage (void)
      }
  
    if (!TARGET_MIPS5900)
@@ -1375,7 +1363,7 @@ diff -rupNb gcc-5.3.0-base/gcc/config/mips/mips.c gcc-5.3.0-mmi/gcc/config/mips/
  
    if (!TARGET_HARD_FLOAT)
      {
-@@ -19202,6 +19431,69 @@ mips_expand_vi_general (machine_mode vmo
+@@ -19389,6 +19613,69 @@ mips_expand_vi_general (machine_mode vmo
    emit_move_insn (target, mem);
  }
  
@@ -1445,7 +1433,7 @@ diff -rupNb gcc-5.3.0-base/gcc/config/mips/mips.c gcc-5.3.0-mmi/gcc/config/mips/
  /* Expand a vector initialization.  */
  
  void
-@@ -19240,23 +19532,29 @@ mips_expand_vector_init (rtx target, rtx
+@@ -19427,23 +19714,29 @@ mips_expand_vector_init (rtx target, rtx
        return;
      }
  
@@ -1479,7 +1467,7 @@ diff -rupNb gcc-5.3.0-base/gcc/config/mips/mips.c gcc-5.3.0-mmi/gcc/config/mips/
    mips_expand_vi_general (vmode, imode, nelt, nvar, target, vals);
  }
  
-@@ -19358,6 +19656,106 @@ mips_expand_vec_minmax (rtx target, rtx
+@@ -19545,6 +19838,106 @@ mips_expand_vec_minmax (rtx target, rtx
    emit_insn (gen_rtx_SET (VOIDmode, target, x));
  }
  
