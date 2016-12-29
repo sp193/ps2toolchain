@@ -17,7 +17,6 @@
  ## Apply the uncommitted patches first (libgcc, short-loop bug, EE-core extensions, MMI)
  ## TODO: Remove these lines, once the patches are submitted.
  cat ../../patches/gcc-$GCC_VERSION-libgcc.patch | patch -p1 || { exit 1; }
- cat ../../patches/gcc-$GCC_VERSION-slb.patch | patch -p1 || { exit 1; }
  cat ../../patches/gcc-$GCC_VERSION-ee.patch | patch -p1 || { exit 1; }
  cat ../../patches/gcc-$GCC_VERSION-mmi.patch | patch -p1 || { exit 1; }
 

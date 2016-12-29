@@ -1,6 +1,6 @@
 diff -rupNb gcc-5.3.0-base/gcc/config/mips/5900.md gcc-5.3.0-mmi/gcc/config/mips/5900.md
---- gcc-5.3.0-base/gcc/config/mips/5900.md	2016-04-03 09:55:04.733127536 +0800
-+++ gcc-5.3.0-mmi/gcc/config/mips/5900.md	2016-06-25 18:06:47.942778063 +0800
+--- gcc-5.3.0-base/gcc/config/mips/5900.md	2016-12-29 17:47:30.845178281 +0800
++++ gcc-5.3.0-mmi/gcc/config/mips/5900.md	2016-12-29 17:48:30.701179429 +0800
 @@ -18,9 +18,160 @@
  ;;
  ;; R5900 instruction patterns and pipeline tuning.
@@ -951,8 +951,8 @@ diff -rupNb gcc-5.3.0-base/gcc/config/mips/5900.md gcc-5.3.0-mmi/gcc/config/mips
 +    DONE;
 +})
 diff -rupNb gcc-5.3.0-base/gcc/config/mips/constraints.md gcc-5.3.0-mmi/gcc/config/mips/constraints.md
---- gcc-5.3.0-base/gcc/config/mips/constraints.md	2016-03-27 16:06:00.563416284 +0800
-+++ gcc-5.3.0-mmi/gcc/config/mips/constraints.md	2016-06-26 09:05:07.881949747 +0800
+--- gcc-5.3.0-base/gcc/config/mips/constraints.md	2016-12-29 17:47:30.853178281 +0800
++++ gcc-5.3.0-mmi/gcc/config/mips/constraints.md	2016-12-29 17:48:30.737179430 +0800
 @@ -48,6 +48,9 @@
    "The concatenated @code{hi1} and @code{lo1} registers.  Use this register
     to store doubleword values.")
@@ -964,8 +964,8 @@ diff -rupNb gcc-5.3.0-base/gcc/config/mips/constraints.md gcc-5.3.0-mmi/gcc/conf
    "@internal")
  
 diff -rupNb gcc-5.3.0-base/gcc/config/mips/mips.c gcc-5.3.0-mmi/gcc/config/mips/mips.c
---- gcc-5.3.0-base/gcc/config/mips/mips.c	2016-07-03 13:22:26.111507223 +0800
-+++ gcc-5.3.0-mmi/gcc/config/mips/mips.c	2016-07-03 13:24:42.183509832 +0800
+--- gcc-5.3.0-base/gcc/config/mips/mips.c	2016-12-29 17:47:30.857178281 +0800
++++ gcc-5.3.0-mmi/gcc/config/mips/mips.c	2016-12-29 17:48:30.753179430 +0800
 @@ -735,7 +735,7 @@ const enum reg_class mips_regno_to_class
    DSP_ACC_REGS,	DSP_ACC_REGS,	DSP_ACC_REGS,	DSP_ACC_REGS,
    DSP_ACC_REGS,	DSP_ACC_REGS,	ALL_REGS,	ALL_REGS,
@@ -1344,7 +1344,7 @@ diff -rupNb gcc-5.3.0-base/gcc/config/mips/mips.c gcc-5.3.0-mmi/gcc/config/mips/
        case HAZARD_DELAY:
  	set = single_set (insn);
  	gcc_assert (set);
-@@ -18133,8 +18347,18 @@ mips_conditional_register_usage (void)
+@@ -17951,8 +18165,18 @@ mips_conditional_register_usage (void)
      }
  
    if (!TARGET_MIPS5900)
@@ -1363,7 +1363,7 @@ diff -rupNb gcc-5.3.0-base/gcc/config/mips/mips.c gcc-5.3.0-mmi/gcc/config/mips/
  
    if (!TARGET_HARD_FLOAT)
      {
-@@ -19389,6 +19613,69 @@ mips_expand_vi_general (machine_mode vmo
+@@ -19207,6 +19431,69 @@ mips_expand_vi_general (machine_mode vmo
    emit_move_insn (target, mem);
  }
  
@@ -1433,7 +1433,7 @@ diff -rupNb gcc-5.3.0-base/gcc/config/mips/mips.c gcc-5.3.0-mmi/gcc/config/mips/
  /* Expand a vector initialization.  */
  
  void
-@@ -19427,23 +19714,29 @@ mips_expand_vector_init (rtx target, rtx
+@@ -19245,23 +19532,29 @@ mips_expand_vector_init (rtx target, rtx
        return;
      }
  
@@ -1467,7 +1467,7 @@ diff -rupNb gcc-5.3.0-base/gcc/config/mips/mips.c gcc-5.3.0-mmi/gcc/config/mips/
    mips_expand_vi_general (vmode, imode, nelt, nvar, target, vals);
  }
  
-@@ -19545,6 +19838,106 @@ mips_expand_vec_minmax (rtx target, rtx
+@@ -19363,6 +19656,106 @@ mips_expand_vec_minmax (rtx target, rtx
    emit_insn (gen_rtx_SET (VOIDmode, target, x));
  }
  
@@ -1575,8 +1575,8 @@ diff -rupNb gcc-5.3.0-base/gcc/config/mips/mips.c gcc-5.3.0-mmi/gcc/config/mips/
  
  machine_mode
 diff -rupNb gcc-5.3.0-base/gcc/config/mips/mips-ftypes.def gcc-5.3.0-mmi/gcc/config/mips/mips-ftypes.def
---- gcc-5.3.0-base/gcc/config/mips/mips-ftypes.def	2016-03-27 16:01:13.935410771 +0800
-+++ gcc-5.3.0-mmi/gcc/config/mips/mips-ftypes.def	2016-05-07 14:20:04.214507917 +0800
+--- gcc-5.3.0-base/gcc/config/mips/mips-ftypes.def	2016-07-03 13:34:40.000000000 +0800
++++ gcc-5.3.0-mmi/gcc/config/mips/mips-ftypes.def	2016-12-29 17:48:30.813179431 +0800
 @@ -127,3 +127,12 @@ DEF_MIPS_FTYPE (2, (VOID, SI, SI))
  DEF_MIPS_FTYPE (1, (VOID, USI))
  DEF_MIPS_FTYPE (2, (VOID, V2HI, V2HI))
@@ -1591,8 +1591,8 @@ diff -rupNb gcc-5.3.0-base/gcc/config/mips/mips-ftypes.def gcc-5.3.0-mmi/gcc/con
 +DEF_MIPS_FTYPE (2, (V8HI, V8HI, INT))
 +DEF_MIPS_FTYPE (2, (V4SI, V4SI, INT))
 diff -rupNb gcc-5.3.0-base/gcc/config/mips/mips.h gcc-5.3.0-mmi/gcc/config/mips/mips.h
---- gcc-5.3.0-base/gcc/config/mips/mips.h	2016-04-03 10:04:54.761127496 +0800
-+++ gcc-5.3.0-mmi/gcc/config/mips/mips.h	2016-05-30 16:49:00.547445684 +0800
+--- gcc-5.3.0-base/gcc/config/mips/mips.h	2016-12-29 17:47:30.893178282 +0800
++++ gcc-5.3.0-mmi/gcc/config/mips/mips.h	2016-12-29 17:48:31.545179444 +0800
 @@ -1455,6 +1455,7 @@ FP_ASM_SPEC "\
  #endif
  
@@ -1717,8 +1717,8 @@ diff -rupNb gcc-5.3.0-base/gcc/config/mips/mips.h gcc-5.3.0-mmi/gcc/config/mips/
  /* List the "software" names for each register.  Also list the numerical
     names for $fp and $sp.  */
 diff -rupNb gcc-5.3.0-base/gcc/config/mips/mips.md gcc-5.3.0-mmi/gcc/config/mips/mips.md
---- gcc-5.3.0-base/gcc/config/mips/mips.md	2016-06-24 23:16:18.176239390 +0800
-+++ gcc-5.3.0-mmi/gcc/config/mips/mips.md	2016-06-25 09:55:20.939379373 +0800
+--- gcc-5.3.0-base/gcc/config/mips/mips.md	2016-12-29 17:47:30.921178282 +0800
++++ gcc-5.3.0-mmi/gcc/config/mips/mips.md	2016-12-29 17:48:32.305179460 +0800
 @@ -315,10 +315,10 @@
  ;; mtlo		transfer to a lo register
  ;; mfhi		transfer from a hi register
@@ -1777,8 +1777,8 @@ diff -rupNb gcc-5.3.0-base/gcc/config/mips/mips.md gcc-5.3.0-mmi/gcc/config/mips
  
  ;; Can the instruction be put into a delay slot?
 diff -rupNb gcc-5.3.0-base/gcc/config/mips/mips-modes.def gcc-5.3.0-mmi/gcc/config/mips/mips-modes.def
---- gcc-5.3.0-base/gcc/config/mips/mips-modes.def	2016-03-27 16:01:13.935410771 +0800
-+++ gcc-5.3.0-mmi/gcc/config/mips/mips-modes.def	2016-06-25 17:13:01.958716183 +0800
+--- gcc-5.3.0-base/gcc/config/mips/mips-modes.def	2016-07-03 13:34:40.000000000 +0800
++++ gcc-5.3.0-mmi/gcc/config/mips/mips-modes.def	2016-12-29 17:48:32.349179461 +0800
 @@ -22,12 +22,14 @@ FLOAT_MODE (TF, 16, ieee_quad_format);
  /* Vector modes.  */
  VECTOR_MODES (INT, 4);        /* V4QI  V2HI      */
@@ -1798,8 +1798,8 @@ diff -rupNb gcc-5.3.0-base/gcc/config/mips/mips-modes.def gcc-5.3.0-mmi/gcc/conf
  
  VECTOR_MODES (FRACT, 4);	/* V4QQ  V2HQ */
 diff -rupNb gcc-5.3.0-base/gcc/config/mips/mips-protos.h gcc-5.3.0-mmi/gcc/config/mips/mips-protos.h
---- gcc-5.3.0-base/gcc/config/mips/mips-protos.h	2016-03-27 16:01:13.935410771 +0800
-+++ gcc-5.3.0-mmi/gcc/config/mips/mips-protos.h	2016-06-24 23:18:48.400242147 +0800
+--- gcc-5.3.0-base/gcc/config/mips/mips-protos.h	2016-07-03 13:34:40.000000000 +0800
++++ gcc-5.3.0-mmi/gcc/config/mips/mips-protos.h	2016-12-29 17:48:32.349179461 +0800
 @@ -366,4 +366,6 @@ typedef rtx (*mulsidi3_gen_fn) (rtx, rtx
  extern mulsidi3_gen_fn mips_mulsidi3_gen_fn (enum rtx_code);
  #endif
@@ -1808,8 +1808,8 @@ diff -rupNb gcc-5.3.0-base/gcc/config/mips/mips-protos.h gcc-5.3.0-mmi/gcc/confi
 +
  #endif /* ! GCC_MIPS_PROTOS_H */
 diff -rupNb gcc-5.3.0-base/gcc/config/mips/predicates.md gcc-5.3.0-mmi/gcc/config/mips/predicates.md
---- gcc-5.3.0-base/gcc/config/mips/predicates.md	2016-03-27 16:06:00.571416277 +0800
-+++ gcc-5.3.0-mmi/gcc/config/mips/predicates.md	2016-06-26 09:05:47.453949640 +0800
+--- gcc-5.3.0-base/gcc/config/mips/predicates.md	2016-12-29 17:47:30.921178282 +0800
++++ gcc-5.3.0-mmi/gcc/config/mips/predicates.md	2016-12-29 17:48:32.349179461 +0800
 @@ -252,6 +252,10 @@
         (ior (match_test "MD_REG_P (REGNO (op))")
              (match_test "MD1_REG_P (REGNO (op))"))))
