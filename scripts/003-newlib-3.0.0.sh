@@ -1,7 +1,7 @@
 #!/bin/bash
 # newlib-1.10.0.sh by Naomi Peori (naomi@peori.ca)
 
-NEWLIB_VERSION=1.10.0
+NEWLIB_VERSION=3.0.0.20180226
 ## Download the source code.
 SOURCE=ftp://sourceware.org/pub/newlib/newlib-$NEWLIB_VERSION.tar.gz
 wget --continue $SOURCE || { exit 1; }
